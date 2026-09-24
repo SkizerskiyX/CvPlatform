@@ -35,6 +35,7 @@ export function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/oauth-callback" element={<OAuthCallbackPage />} />
         <Route path="/profile" element={<Protected><ProfilePage /></Protected>} />
+        <Route path="/profiles/:id/edit" element={<Protected><ProfilePage /></Protected>} />
         <Route path="/cvs" element={<Protected><CvsPage /></Protected>} />
         <Route path="/cvs/:id" element={<Protected><CvDetailsPage /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />

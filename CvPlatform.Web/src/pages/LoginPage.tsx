@@ -12,14 +12,19 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (busy) return;
+    setBusy(true);
     try {
       await signIn(email, password);
       navigate('/profile');
     } catch (requestError) {
       setError((requestError as Error).message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -27,10 +32,12 @@ export function LoginPage() {
     <Card className="auth-card">
       <Card.Body>
         <Card.Title>{t('auth.signIn')}</Card.Title>
-        {error && <p className="text-danger">{error}</p>}
+        {error && <p className="text-danger" role="alert">{error}</p>}
         <Form onSubmit={submit} className="d-grid gap-3">
           <Form.Control
             type="email"
+            aria-label={t('auth.email')}
+            autoComplete="email"
             required
             placeholder={t('auth.email')}
             value={email}
@@ -38,13 +45,15 @@ export function LoginPage() {
           />
           <Form.Control
             type="password"
+            aria-label={t('auth.password')}
+            autoComplete="current-password"
             required
             minLength={8}
             placeholder={t('auth.password')}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-          <Button type="submit">{t('auth.signIn')}</Button>
+          <Button type="submit" disabled={busy}>{busy ? t('common.loading') : t('auth.signIn')}</Button>
         </Form>
         <div className="d-flex gap-2 mt-3">
           <a className="btn btn-outline-secondary btn-sm" href={`${apiBaseUrl}/api/account/external-login?provider=Google&returnUrl=/`}>

@@ -20,6 +20,9 @@ export const positionsApi = {
   duplicate: async (id: string) => (await apiClient.post<{ id: string }>(`/api/positions/${id}/duplicate`)).data,
 };
 export const profilesApi = {
+  editor: async (id: string) => (await apiClient.get<ProfileEditor>(`/api/profiles/${id}/edit`)).data,
+  updateProject: async (id: string, projectId: string, body: Omit<Project, 'id'>) => (await apiClient.put<Project>(`/api/profiles/${id}/projects/${projectId}`, body)).data,
+  tagSuggestions: async (prefix: string) => (await apiClient.get<string[]>('/api/tags/suggestions', { params: { prefix } })).data,
   me: async () => (await apiClient.get<ProfileEditor>('/api/profiles/me')).data,
   autosave: async (id: string, version: number, changes: { attributeDefinitionId: string; value: AttributeValueInput }[], removedAttributeIds: string[] = []) => (await apiClient.put<{ version: number }>(`/api/profiles/${id}/autosave`, { version, changes, removedAttributeIds })).data,
   addProject: async (id: string, body: Omit<Project, 'id'>) => (await apiClient.post<Project>(`/api/profiles/${id}/projects`, body)).data,

@@ -11,19 +11,24 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const passwordIsValid = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}/.test(password);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (busy) return;
     if (!passwordIsValid) {
       setError(t('auth.passwordRule'));
       return;
     }
+    setBusy(true);
     try {
       await signUp(email, password);
       navigate('/profile');
     } catch (requestError) {
       setError((requestError as Error).message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -35,6 +40,8 @@ export function RegisterPage() {
         <Form onSubmit={submit} className="d-grid gap-3">
           <Form.Control
             type="email"
+            aria-label={t('auth.email')}
+            autoComplete="email"
             required
             placeholder={t('auth.email')}
             value={email}
@@ -42,6 +49,7 @@ export function RegisterPage() {
           />
           <Form.Control
             type="password"
+            aria-label={t('auth.password')}
             required
             minLength={8}
             autoComplete="new-password"
@@ -53,7 +61,7 @@ export function RegisterPage() {
           <Form.Text className={password.length > 0 && !passwordIsValid ? 'text-danger' : 'text-body-secondary'}>
             {t('auth.passwordRule')}
           </Form.Text>
-          <Button type="submit" disabled={!email || !passwordIsValid}>{t('auth.register')}</Button>
+          <Button type="submit" disabled={busy || !email || !passwordIsValid}>{busy ? t('common.loading') : t('auth.register')}</Button>
         </Form>
       </Card.Body>
     </Card>

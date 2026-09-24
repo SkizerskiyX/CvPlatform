@@ -57,3 +57,8 @@ pgdata/
 *.snk
 *.nupkg
 packages/
+
+# Local project notes
+mmm.txt
+requirements.md
+REQUIREMENTS-STATUS.md

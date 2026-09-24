@@ -50,8 +50,8 @@ export function AttributeValueEditor({ dataType, options, value, onChange }: Att
     return (
       <Form.Control
         type="date"
-        value={value.dateValue ?? ''}
-        onChange={(event) => onChange({ ...value, dateValue: event.target.value || null })}
+        value={value.dateValue?.slice(0, 10) ?? ''}
+        onChange={(event) => onChange({ ...value, dateValue: event.target.value ? new Date(event.target.value).toISOString() : null })}
       />
     );
   }
@@ -61,13 +61,13 @@ export function AttributeValueEditor({ dataType, options, value, onChange }: Att
       <div className="d-flex gap-2">
         <Form.Control
           type="date"
-          value={value.periodStart ?? ''}
-          onChange={(event) => onChange({ ...value, periodStart: event.target.value || null })}
+          value={value.periodStart?.slice(0, 10) ?? ''}
+          onChange={(event) => onChange({ ...value, periodStart: event.target.value ? new Date(event.target.value).toISOString() : null })}
         />
         <Form.Control
           type="date"
-          value={value.periodEnd ?? ''}
-          onChange={(event) => onChange({ ...value, periodEnd: event.target.value || null })}
+          value={value.periodEnd?.slice(0, 10) ?? ''}
+          onChange={(event) => onChange({ ...value, periodEnd: event.target.value ? new Date(event.target.value).toISOString() : null })}
         />
       </div>
     );

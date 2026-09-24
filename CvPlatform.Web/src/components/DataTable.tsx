@@ -1,4 +1,5 @@
 import { Table } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 
 export type Column<T> = {
   key: string;
@@ -27,6 +28,8 @@ export function DataTable<T>({
   emptyText,
   onRowClick,
 }: DataTableProps<T>) {
+  const { i18n } = useTranslation();
+  const ru = i18n.language.startsWith('ru');
   const allSelected = rows.length > 0 && rows.every((row) => selectedIds.includes(rowKey(row)));
 
   const toggleAll = () => onSelectionChange(allSelected ? [] : rows.map(rowKey));
@@ -52,7 +55,7 @@ export function DataTable<T>({
           {rows.map((row) => {
             const id = rowKey(row);
             return (
-              <tr key={id} onClick={() => onRowClick?.(row)}>
+              <tr key={id} className={onRowClick ? 'clickable-row' : undefined} data-selected={selectedIds.includes(id)} onClick={(event) => { if (!(event.target as HTMLElement).closest('a,button,input,select,textarea')) onRowClick?.(row); }}>
                 <td className="selection-cell" onClick={(event) => event.stopPropagation()}>
                   <input
                     type="checkbox"
@@ -76,6 +79,7 @@ export function DataTable<T>({
           )}
         </tbody>
       </Table>
+      <div className="table-footer"><span>{rows.length} {ru ? 'записей' : 'records'}</span><span>{selectedIds.length ? (ru ? 'Выбрано: ' : 'Selected: ') + selectedIds.length : (ru ? 'Выберите строки для действий' : 'Select rows to manage them')}</span></div>
     </div>
   );
 }

@@ -75,6 +75,7 @@ const resources = {
       },
       profile: {
         title: 'Candidate profile',
+        discardNotice: 'Reload the server version and discard your unsaved changes?',
         me: 'Me',
         info: 'Info',
         projects: 'Projects',
@@ -182,6 +183,7 @@ const resources = {
       },
       profile: {
         title: 'Профиль кандидата',
+        discardNotice: 'Загрузить версию сервера и удалить несохранённые изменения?',
         me: 'Обо мне',
         info: 'Информация',
         projects: 'Проекты',

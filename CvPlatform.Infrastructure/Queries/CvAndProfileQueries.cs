@@ -94,6 +94,9 @@ public sealed class ProfileQueries(AppDbContext db, IAttributeDefinitionReposito
         var builtIn = await definitions.GetBuiltInAsync(cancellationToken);
         var infoIds = profile.AttributeValues.Select(x => x.AttributeDefinitionId).ToArray();
         var info = await db.AttributeDefinitions.AsNoTracking()
+            .Include(x => x.Options)
+            .Include(x => x.Category)
+            .AsSplitQuery()
             .Where(x => infoIds.Contains(x.Id) && x.SystemKey == null)
             .OrderBy(x => x.Category!.Name).ThenBy(x => x.Name)
             .ToListAsync(cancellationToken);

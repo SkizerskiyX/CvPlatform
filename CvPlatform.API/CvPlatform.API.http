@@ -1,0 +1,6 @@
+@CvPlatform.API_HostAddress = http://localhost:5242
+
+GET {{CvPlatform.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

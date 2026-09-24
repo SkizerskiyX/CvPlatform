@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CvPlatform.Domain/CvPlatform.Domain.csproj" />
+  <Project Path="CvPlatform.Application/CvPlatform.Application.csproj" />
+  <Project Path="CvPlatform.Infrastructure/CvPlatform.Infrastructure.csproj" />
+  <Project Path="CvPlatform.API/CvPlatform.API.csproj" />
+</Solution>

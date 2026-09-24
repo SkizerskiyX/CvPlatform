@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>3d1b2905-2112-4965-a13f-6fb2f0bb19b1</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <SpaRoot>..\CvPlatform.Web\</SpaRoot>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+  </PropertyGroup>
+
+  <Target Name="InstallSpaPackages" Condition="'$(SpaBuildEnabled)' != 'false' and Exists('$(SpaRoot)package.json') and !Exists('$(SpaRoot)node_modules')">
+    <Exec Command="npm install --no-audit --no-fund" WorkingDirectory="$(SpaRoot)" />
+  </Target>
+
+  <Target Name="BuildSpaAssets" BeforeTargets="Build" DependsOnTargets="InstallSpaPackages" Condition="'$(SpaBuildEnabled)' != 'false' and Exists('$(SpaRoot)package.json')">
+    <Exec Command="npm run build" WorkingDirectory="$(SpaRoot)" EnvironmentVariables="SPA_OUT_DIR=$(MSBuildProjectDirectory)\wwwroot" />
+  </Target>
+
+  <ItemGroup>
+    
+    <None Include="appsettings*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <ProjectReference Include="..\CvPlatform.Application\CvPlatform.Application.csproj" />
+    <ProjectReference Include="..\CvPlatform.Infrastructure\CvPlatform.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(SpaRoot)wwwroot\index.html')">
+    <Content Include="$(SpaRoot)wwwroot\**\*" LinkBase="wwwroot" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

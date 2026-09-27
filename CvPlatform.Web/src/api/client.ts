@@ -54,7 +54,7 @@ export function readRolesFromToken(token: string | null): string[] {
 
   try {
     const decoded = JSON.parse(window.atob(payload.replace(/-/g, '+').replace(/_/g, '/'))) as Record<string, unknown>;
-    const role = decoded.role ?? decoded.roles;
+    const role = decoded.role ?? decoded.roles ?? decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
     if (Array.isArray(role)) {
       return role.map(String);
     }

@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Button, Card, Form } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { apiBaseUrl } from '../api/client';
+import { ExternalLoginButtons } from '../components/ExternalLoginButtons';
 import { useAuth } from '../hooks/useAuth';
 
 export function LoginPage() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const oauthError = searchParams.get('error');
+  const oauthErrorKey = ['external', 'cancelled', 'unavailable', 'missing_email', 'account_exists', 'locked'].includes(oauthError ?? '')
+    ? oauthError : 'external';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -33,6 +37,7 @@ export function LoginPage() {
       <Card.Body>
         <Card.Title>{t('auth.signIn')}</Card.Title>
         {error && <p className="text-danger" role="alert">{error}</p>}
+        {!error && oauthError && <p className="text-danger" role="alert">{t(`auth.externalErrors.${oauthErrorKey}`)}</p>}
         <Form onSubmit={submit} className="d-grid gap-3">
           <Form.Control
             type="email"
@@ -55,14 +60,7 @@ export function LoginPage() {
           />
           <Button type="submit" disabled={busy}>{busy ? t('common.loading') : t('auth.signIn')}</Button>
         </Form>
-        <div className="d-flex gap-2 mt-3">
-          <a className="btn btn-outline-secondary btn-sm" href={`${apiBaseUrl}/api/account/external-login?provider=Google&returnUrl=/`}>
-            {t('auth.emailProvider', { provider: 'Google' })}
-          </a>
-          <a className="btn btn-outline-secondary btn-sm" href={`${apiBaseUrl}/api/account/external-login?provider=Facebook&returnUrl=/`}>
-            {t('auth.emailProvider', { provider: 'Facebook' })}
-          </a>
-        </div>
+        <ExternalLoginButtons />
       </Card.Body>
     </Card>
   );

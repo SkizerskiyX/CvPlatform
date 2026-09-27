@@ -2,11 +2,9 @@ using CvPlatform.Domain.Enums;
 
 namespace CvPlatform.Application.DTOs;
 
-// ---------- Common ----------
 public sealed record IdsRequest(List<Guid> Ids);
 public sealed record VersionResponse(Guid Id, uint Version);
 
-/// <summary>Typed attribute value. Used both for input and output; only the field matching the data type is meaningful.</summary>
 public sealed record AttributeValueInput(
     string? StringValue,
     decimal? NumericValue,
@@ -20,7 +18,6 @@ public sealed record AttributeValueInput(
     public static readonly AttributeValueInput Empty = new(null, null, null, null, null, null, null, null);
 }
 
-/// <summary>Attribute value with a human-readable representation; <see cref="Display"/> is null when the value is empty.</summary>
 public sealed record AttributeValueView(Guid AttributeDefinitionId, AttributeValueInput Value, string? Display);
 
 // ---------- Attribute library ----------
@@ -46,7 +43,6 @@ public sealed record SaveAttributeDefinitionRequest(
     List<string>? DropdownOptions,
     uint? Version);
 
-// ---------- Profiles ----------
 public sealed record MeDto(
     Guid ProfileId,
     string Email,
@@ -80,7 +76,6 @@ public sealed record PublicProfileDto(
 public sealed record ProjectDto(Guid Id, string Name, DateTime PeriodStart, DateTime? PeriodEnd, string? Description, IReadOnlyList<string> Tags);
 public sealed record SaveProjectRequest(string Name, DateTime PeriodStart, DateTime? PeriodEnd, string? Description, List<string>? Tags);
 
-// ---------- Positions ----------
 public sealed record PositionListItemDto(
     Guid Id,
     string Title,
@@ -126,7 +121,6 @@ public sealed record SavePositionRequest(
     List<AccessRuleInput>? AccessRules,
     uint? Version);
 
-// ---------- CVs ----------
 public sealed record CvListItemDto(
     Guid Id,
     Guid PositionId,
@@ -163,12 +157,10 @@ public sealed record CvDocumentDto(
     IReadOnlyList<CvSectionDto> Sections,
     IReadOnlyList<CvProjectDto> Projects);
 
-// ---------- Engagement ----------
 public sealed record DiscussionPostDto(Guid Id, Guid PositionId, Guid AuthorProfileId, string AuthorName, string Content, DateTime CreatedAt);
 public sealed record CreateDiscussionPostRequest(string Content);
 public sealed record LikeDto(Guid CvId, int LikeCount, bool LikedByMe);
 
-// ---------- Main page / search ----------
 public sealed record StatsDto(int CvsLast24Hours, int TotalPositions, int TotalCandidates, int TotalRecruiters, int TotalPublishedCvs);
 public sealed record TagCountDto(string Tag, int Count);
 public sealed record SearchResultDto(string Query, IReadOnlyList<PositionListItemDto> Positions, IReadOnlyList<CvListItemDto> Cvs);

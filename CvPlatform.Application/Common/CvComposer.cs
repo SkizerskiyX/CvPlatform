@@ -9,10 +9,6 @@ public sealed record ComposedCv(
     IReadOnlyList<CvProjectDto> Projects,
     int MissingCount);
 
-/// <summary>
-/// Assembles a CV from the candidate profile (built-in + library attribute values),
-/// the position template (attribute list) and the candidate projects filtered by the position tags.
-/// </summary>
 public static class CvComposer
 {
     public static ComposedCv Compose(

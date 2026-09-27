@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 import type { AttributeCategory, AttributeDefinition, AuthResponse, Cv, CvDocument, DiscussionPost, Profile, ProfileEditor, SaveAttributeDefinition, SavePosition, Position, PositionListItem, Project, SearchResult, Stats, AttributeValueInput } from './types';
 
-export const accountApi = { register: async (email: string, password: string) => (await apiClient.post<AuthResponse>('/api/account/register', { email, password })).data, login: async (email: string, password: string) => (await apiClient.post<AuthResponse>('/api/account/login', { email, password })).data, me: async () => (await apiClient.get<Profile>('/api/account/me')).data, logout: async () => { await apiClient.post('/api/account/logout'); } };
+export const accountApi = { register: async (email: string, password: string, isRecruiter = false) => (await apiClient.post<AuthResponse>('/api/account/register', { email, password, isRecruiter })).data, login: async (email: string, password: string) => (await apiClient.post<AuthResponse>('/api/account/login', { email, password })).data, me: async () => (await apiClient.get<Profile>('/api/account/me')).data, logout: async () => { await apiClient.post('/api/account/logout'); } };
 export const attributesApi = {
   search: async (namePrefix = '', categoryId = '') => (await apiClient.get<AttributeDefinition[]>('/api/attributes', { params: { namePrefix: namePrefix || undefined, categoryId: categoryId || undefined } })).data,
   categories: async () => (await apiClient.get<AttributeCategory[]>('/api/attributes/categories')).data,

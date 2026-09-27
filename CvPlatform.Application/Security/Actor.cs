@@ -13,14 +13,12 @@ public static class RoleNames
     public static readonly IReadOnlyList<string> All = [Candidate, Recruiter, Admin];
 }
 
-/// <summary>The user performing an operation. Built by the API from the (DB-refreshed) claims.</summary>
 public sealed record Actor(Guid? ProfileId, bool IsAdmin, bool IsRecruiter)
 {
     public static readonly Actor Anonymous = new(null, false, false);
 
     public bool IsAuthenticated => ProfileId.HasValue;
 
-    /// <summary>Recruiters and administrators (admins can perform every recruiter action).</summary>
     public bool IsStaff => IsAdmin || IsRecruiter;
 
     public bool IsOwner(Guid profileId) => ProfileId == profileId;

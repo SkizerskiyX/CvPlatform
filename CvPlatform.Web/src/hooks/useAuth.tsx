@@ -11,7 +11,7 @@ type AuthState = {
   isStaff: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, isRecruiter?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
   reloadProfile: () => Promise<void>;
   applyToken: (token: string) => Promise<void>;
@@ -60,8 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signUp = useCallback(
-    async (email: string, password: string) => {
-      const result = await accountApi.register(email, password);
+    async (email: string, password: string, isRecruiter = false) => {
+      const result = await accountApi.register(email, password, isRecruiter);
       await applyToken(result.token);
     },
     [applyToken],

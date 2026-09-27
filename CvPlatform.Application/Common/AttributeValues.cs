@@ -5,10 +5,6 @@ using CvPlatform.Domain.Enums;
 
 namespace CvPlatform.Application.Common;
 
-/// <summary>
-/// The single attribute "engine": reads and writes values of both built-in ("Me") attributes
-/// and library attributes of a profile, and formats them for display.
-/// </summary>
 public static class AttributeValues
 {
     public static AttributeValueInput FromEntity(AttributeValueBase? value) => value is null
@@ -121,7 +117,6 @@ public static class AttributeValues
             case AttributeDataType.Text when input.StringValue is { Length: > 8000 }:
                 throw new InvalidOperationException($"'{definition.Name}' must be at most 8000 characters.");
             case AttributeDataType.Image when !string.IsNullOrWhiteSpace(input.ImageUrl) && !IsExternalUrl(input.ImageUrl):
-                // Images must live in external cloud storage; only links are stored.
                 throw new InvalidOperationException($"'{definition.Name}' must be an http(s) link to an externally stored image.");
             case AttributeDataType.Period when input.PeriodStart is null && input.PeriodEnd is not null:
                 throw new InvalidOperationException($"'{definition.Name}' requires a start date.");

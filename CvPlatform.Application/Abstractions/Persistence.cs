@@ -4,10 +4,6 @@ namespace CvPlatform.Application.Abstractions;
 
 public interface IUnitOfWork
 {
-    /// <summary>
-    /// Declares the version the client based its changes on. Saving fails with
-    /// <see cref="Domain.Exceptions.ConcurrencyConflictException"/> if the stored version differs.
-    /// </summary>
     void ExpectVersion(BaseEntity entity, uint version);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
@@ -40,7 +36,6 @@ public interface IPositionRepository
 
 public interface IUserProfileRepository
 {
-    /// <summary>Loads the profile together with its library attribute values.</summary>
     Task<UserProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<UserProfile?> GetByIdentityUserIdAsync(string identityUserId, CancellationToken cancellationToken);
     Task AddAsync(UserProfile profile, CancellationToken cancellationToken);
@@ -74,7 +69,6 @@ public interface ILikeRepository
 
 public interface IDiscussionRepository
 {
-    /// <summary>Posts of a position (with authors) in chronological order, optionally only those created after <paramref name="after"/>.</summary>
     Task<IReadOnlyList<DiscussionPost>> GetByPositionAsync(Guid positionId, DateTime? after, CancellationToken cancellationToken);
     Task AddAsync(DiscussionPost post, CancellationToken cancellationToken);
 }

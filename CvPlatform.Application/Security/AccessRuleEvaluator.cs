@@ -6,10 +6,6 @@ using CvPlatform.Domain.Enums;
 
 namespace CvPlatform.Application.Security;
 
-/// <summary>
-/// A position is either public (accessible to every authenticated user) or restricted:
-/// then the candidate must satisfy ALL access rules. A restricted position without rules is closed.
-/// </summary>
 public static class AccessRuleEvaluator
 {
     public static bool HasAccess(
@@ -98,7 +94,6 @@ public static class AccessRuleEvaluator
         }
     }
 
-    /// <summary>Human-readable comparison value (dropdown option ids are resolved to option names).</summary>
     public static string DisplayValue(AttributeDefinition definition, string comparisonValue) =>
         definition.DataType == AttributeDataType.Dropdown
             ? string.Join(", ", Split(comparisonValue).Select(id => definition.Options.FirstOrDefault(o => o.Id.ToString() == id)?.Value ?? id))

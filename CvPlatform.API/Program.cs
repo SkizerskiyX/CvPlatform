@@ -8,6 +8,8 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using CvPlatform.Domain.Exceptions;
 using FluentValidation;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.OAuth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,25 +40,40 @@ var authenticationBuilder = builder.Services
         };
     });
 
+var oauthEnabled = builder.Configuration.GetValue<bool>("OAuth:Enabled");
 var googleClientId = builder.Configuration["OAuth:Google:ClientId"];
 var googleClientSecret = builder.Configuration["OAuth:Google:ClientSecret"];
-if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+if (oauthEnabled && !string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
 {
     authenticationBuilder.AddGoogle(options =>
     {
         options.ClientId = googleClientId;
         options.ClientSecret = googleClientSecret;
+        ConfigureExternalProvider(options);
     });
 }
 
 var facebookAppId = builder.Configuration["OAuth:Facebook:AppId"];
 var facebookAppSecret = builder.Configuration["OAuth:Facebook:AppSecret"];
-if (!string.IsNullOrEmpty(facebookAppId) && !string.IsNullOrEmpty(facebookAppSecret))
+if (oauthEnabled && !string.IsNullOrWhiteSpace(facebookAppId) && !string.IsNullOrWhiteSpace(facebookAppSecret))
 {
     authenticationBuilder.AddFacebook(options =>
     {
         options.AppId = facebookAppId;
         options.AppSecret = facebookAppSecret;
+        ConfigureExternalProvider(options);
+    });
+}
+
+if (oauthEnabled)
+{
+    authenticationBuilder.AddCookie(IdentityConstants.ExternalScheme, options =>
+    {
+        options.Cookie.Name = "CvPlatform.External";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
     });
 }
 
@@ -68,6 +85,29 @@ builder.Services.AddCors(options => options.AddPolicy("spa", policy => policy
     .AllowAnyMethod()));
 
 var app = builder.Build();
+
+// Use a trusted, configured origin behind Render's TLS-terminating proxy.
+// Both the authorization request and code exchange must use the same HTTPS callback.
+var publicOriginValue = builder.Configuration["OAuth:PublicOrigin"];
+if (oauthEnabled && !string.IsNullOrWhiteSpace(publicOriginValue))
+{
+    var publicOrigin = new Uri(publicOriginValue, UriKind.Absolute);
+    if (publicOrigin.Scheme != Uri.UriSchemeHttps || publicOrigin.AbsolutePath != "/"
+        || publicOrigin.Query.Length > 0 || publicOrigin.Fragment.Length > 0 || publicOrigin.UserInfo.Length > 0)
+        throw new InvalidOperationException("OAuth:PublicOrigin must be an HTTPS origin without a path.");
+
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api/account")
+            || context.Request.Path == "/signin-google" || context.Request.Path == "/signin-facebook")
+        {
+            context.Request.Scheme = publicOrigin.Scheme;
+            context.Request.Host = HostString.FromUriComponent(publicOrigin.IsDefaultPort
+                ? publicOrigin.Host : publicOrigin.Authority);
+        }
+        await next();
+    });
+}
 
 app.UseExceptionHandler(handler => handler.Run(async context =>
 {
@@ -127,3 +167,23 @@ else if (app.Environment.IsDevelopment())
 await CvPlatform.Infrastructure.Persistence.SeedData.EnsureSeededAsync(app.Services);
 
 app.Run();
+
+void ConfigureExternalProvider(OAuthOptions options)
+{
+    options.SignInScheme = IdentityConstants.ExternalScheme;
+    options.SaveTokens = false;
+    options.Events.OnRemoteFailure = context =>
+    {
+        context.HandleResponse();
+        var frontend = (builder.Configuration["Frontend:BaseUrl"] ?? "").TrimEnd('/');
+        context.Response.Redirect(frontend + "/login?error=external");
+        return Task.CompletedTask;
+    };
+    options.Events.OnAccessDenied = context =>
+    {
+        context.HandleResponse();
+        var frontend = (builder.Configuration["Frontend:BaseUrl"] ?? "").TrimEnd('/');
+        context.Response.Redirect(frontend + "/login?error=cancelled");
+        return Task.CompletedTask;
+    };
+}

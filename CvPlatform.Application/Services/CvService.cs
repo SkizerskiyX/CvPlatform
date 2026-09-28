@@ -95,6 +95,14 @@ public sealed class CvService(
         var cv = await cvs.GetByIdAsync(cvId, cancellationToken)
             ?? throw new NotFoundException($"CV '{cvId}' does not exist.");
         actor.RequireCanEditProfile(cv.ProfileId);
+        if (!actor.IsAdmin)
+        {
+            var position = await positions.GetByIdWithDetailsAsync(cv.PositionId, cancellationToken)
+                ?? throw new NotFoundException("Position does not exist.");
+            var profile = await profiles.GetByIdAsync(cv.ProfileId, cancellationToken)
+                ?? throw new NotFoundException("Profile does not exist.");
+            if (!HasAccess(profile, position)) throw new ForbiddenException("This CV is hidden because position access was lost.");
+        }
         return cv;
     }
 }

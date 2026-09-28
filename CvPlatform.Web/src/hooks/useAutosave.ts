@@ -1,54 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client';
-
 export type AutosaveStatus = 'idle' | 'pending' | 'saved' | 'conflict' | 'error';
-
 export function useAutosave<T>(value: T, save: (value: T) => Promise<void>, intervalMs = 7000) {
   const [status, setStatus] = useState<AutosaveStatus>('idle');
-  const latest = useRef(value);
-  const persisted = useRef(value);
-  const isDirty = useRef(false);
-
+  const [dirty, setDirty] = useState(false);
+  const latest = useRef(value); const persisted = useRef(value); const busy = useRef(false); const blocked = useRef(false);
+  const saveRef = useRef(save); saveRef.current = save; latest.current = value;
   useEffect(() => {
-    latest.current = value;
-    if (JSON.stringify(value) !== JSON.stringify(persisted.current)) {
-      isDirty.current = true;
-      setStatus('pending');
-    }
+    const changed = JSON.stringify(value) !== JSON.stringify(persisted.current);
+    setDirty(changed);
+    if (changed && !blocked.current) setStatus('pending');
   }, [value]);
-
   const flush = useCallback(async () => {
-    if (!isDirty.current) {
-      return;
-    }
-
+    if (busy.current || blocked.current || JSON.stringify(latest.current) === JSON.stringify(persisted.current)) return;
+    const snapshot = latest.current; busy.current = true;
     try {
-      await save(latest.current);
-      persisted.current = latest.current;
-      isDirty.current = false;
-      setStatus('saved');
+      await saveRef.current(snapshot); persisted.current = snapshot;
+      const pending = JSON.stringify(latest.current) !== JSON.stringify(snapshot);
+      setDirty(pending); setStatus(pending ? 'pending' : 'saved');
     } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
-        setStatus('conflict');
-        return;
-      }
-      setStatus('error');
-    }
-  }, [save]);
-
-  useEffect(() => {
-    const handle = window.setInterval(() => {
-      void flush();
-    }, intervalMs);
-    return () => window.clearInterval(handle);
-  }, [flush, intervalMs]);
-
-  const markPersisted = useCallback((next: T) => {
-    persisted.current = next;
-    latest.current = next;
-    isDirty.current = false;
-    setStatus('idle');
+      blocked.current = error instanceof ApiError && error.status === 409;
+      setStatus(blocked.current ? 'conflict' : 'error');
+    } finally { busy.current = false; }
   }, []);
-
-  return { status, flush, markPersisted };
+  useEffect(() => { const timer = setInterval(() => void flush(), intervalMs); return () => clearInterval(timer); }, [flush, intervalMs]);
+  const markPersisted = useCallback((next: T) => {
+    persisted.current = next; latest.current = next; blocked.current = false; setDirty(false); setStatus('idle');
+  }, []);
+  return { status, dirty, flush, markPersisted, busy };
 }

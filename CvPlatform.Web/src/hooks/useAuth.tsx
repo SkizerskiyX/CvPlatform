@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { accountApi } from '../api/endpoints';
-import { readRolesFromToken, tokenStorageKey } from '../api/client';
+import { tokenStorageKey } from '../api/client';
 import type { Profile } from '../api/types';
 
 type AuthState = {
@@ -32,15 +32,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setRoles(readRolesFromToken(token));
-    setProfile(await accountApi.me());
+    const current = await accountApi.me();
+    setRoles(current.roles);
+    setProfile(current);
   }, []);
 
   const applyToken = useCallback(
     async (token: string) => {
       localStorage.setItem(tokenStorageKey, token);
-      setRoles(readRolesFromToken(token));
-      setProfile(await accountApi.me());
+      const current = await accountApi.me();
+      setRoles(current.roles);
+      setProfile(current);
     },
     [],
   );
@@ -49,6 +51,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     reloadProfile()
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
+  }, [reloadProfile]);
+
+  useEffect(() => {
+    const clear = () => { setProfile(null); setRoles([]); };
+    const refresh = () => { void reloadProfile().catch(() => undefined); };
+    window.addEventListener('cvplatform:unauthorized', clear);
+    window.addEventListener('focus', refresh);
+    return () => { window.removeEventListener('cvplatform:unauthorized', clear); window.removeEventListener('focus', refresh); };
   }, [reloadProfile]);
 
   const signIn = useCallback(

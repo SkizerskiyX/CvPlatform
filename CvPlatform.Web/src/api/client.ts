@@ -37,6 +37,7 @@ apiClient.interceptors.response.use(
     const message = data?.errors?.join(' ') ?? data?.message ?? error.message;
     if (status === 401) {
       localStorage.removeItem(tokenStorageKey);
+      window.dispatchEvent(new Event('cvplatform:unauthorized'));
     }
     return Promise.reject(new ApiError(status, message));
   },

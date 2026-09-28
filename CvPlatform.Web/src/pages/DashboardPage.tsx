@@ -13,7 +13,7 @@ function PositionTable({ rows, popular = false }: { rows: PositionListItem[]; po
 
 export function DashboardPage() {
   const { i18n } = useTranslation(); const ru = i18n.language.startsWith('ru');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isStaff } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [latest, setLatest] = useState<PositionListItem[]>([]);
   const [popular, setPopular] = useState<PositionListItem[]>([]);
@@ -34,7 +34,7 @@ export function DashboardPage() {
       <section className="workspace-panel latest-panel"><div className="panel-heading"><div><h2>{ru ? 'Новые позиции' : 'Latest positions'}</h2><p>{ru ? 'Недавно добавленные и обновлённые.' : 'Recently added and updated opportunities.'}</p></div><Link to="/positions">{ru ? 'Все позиции' : 'View all positions'}</Link></div><PositionTable rows={latest} /></section>
       <aside className="profile-callout"><div className="paper-motif" aria-hidden="true"><span /><span /><span /><span /></div><h2>{ru ? 'Один профиль. Много возможностей.' : 'One profile. More possibilities.'}</h2><p>{ru ? 'Ваши навыки и проекты станут основой резюме для каждой позиции.' : 'Your skills and projects become the foundation of a CV tailored to each position.'}</p><Link to={isAuthenticated ? '/profile' : '/register'}>{ru ? 'Перейти к профилю' : 'Go to your profile'}</Link></aside>
       <section className="workspace-panel popular-panel"><div className="panel-heading"><div><h2>{ru ? 'Популярные позиции' : 'Most popular positions'}</h2><p>{ru ? 'Пять позиций с наибольшим числом резюме.' : 'The five positions with the most submitted CVs.'}</p></div></div><PositionTable rows={popular} popular /></section>
-      <section className="workspace-panel tags-panel"><div className="panel-heading"><div><h2>{ru ? 'Навыки и технологии' : 'Skills & technologies'}</h2><p>{ru ? 'Исследуйте знакомые направления.' : 'Explore the areas you know best.'}</p></div></div><div className="tag-collection">{tags.map(x => <Link key={x.tag} to={'/search?q=' + encodeURIComponent(x.tag)}>{x.tag}<span>{x.count}</span></Link>)}{!tags.length && <p className="text-body-secondary">{ru ? 'Теги появятся вместе с проектами.' : 'Tags appear as projects are added.'}</p>}</div><p className="activity-note">{stats?.cvsLast24Hours ?? '—'} {ru ? 'новых резюме за 24 часа' : 'new CVs in the last 24 hours'}</p></section>
+      <section className="workspace-panel tags-panel"><div className="panel-heading"><div><h2>{ru ? 'Навыки и технологии' : 'Skills & technologies'}</h2><p>{ru ? 'Исследуйте знакомые направления.' : 'Explore the areas you know best.'}</p></div></div><div className="tag-collection">{tags.map(x => <Link key={x.tag} to={'/search?tag=' + encodeURIComponent(x.tag) + '&kind=' + (isStaff ? 'cvs' : 'positions')}>{x.tag}<span>{x.count}</span></Link>)}{!tags.length && <p className="text-body-secondary">{ru ? 'Теги появятся вместе с проектами.' : 'Tags appear as projects are added.'}</p>}</div><p className="activity-note">{stats?.cvsLast24Hours ?? '—'} {ru ? 'новых резюме за 24 часа' : 'new CVs in the last 24 hours'}</p></section>
     </div>
   </div>;
 }

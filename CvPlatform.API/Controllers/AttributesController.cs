@@ -16,6 +16,9 @@ public sealed class AttributesController(IAttributeDefinitionService service) : 
     [HttpGet("categories"), Authorize]
     public Task<IReadOnlyList<AttributeCategoryDto>> Categories(CancellationToken cancellationToken) => service.CategoriesAsync(cancellationToken);
 
+    [HttpPost("lookup"), Authorize]
+    public Task<IReadOnlyList<AttributeDefinitionDto>> Lookup(IdsRequest request, CancellationToken cancellationToken) => service.GetByIdsAsync(request.Ids, cancellationToken);
+
     [HttpPost, Authorize(Roles = RoleNames.StaffRoles)]
     public Task<AttributeDefinitionDto> Create(SaveAttributeDefinitionRequest request, CancellationToken cancellationToken) => service.CreateAsync(User.ToActor(), request, cancellationToken);
 

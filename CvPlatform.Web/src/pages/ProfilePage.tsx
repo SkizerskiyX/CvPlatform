@@ -4,13 +4,15 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CreatableSelect from 'react-select/creatable';
 import Markdown from 'react-markdown';
-import { attributesApi, profilesApi } from '../api/endpoints';
+import { profilesApi } from '../api/endpoints';
 import { ApiError } from '../api/client';
 import { emptyAttributeValue } from '../api/types';
-import type { AttributeCategory, AttributeDefinition, AttributeValueInput, ProfileEditor, Project } from '../api/types';
+import type { AttributeDefinition, AttributeValueInput, ProfileEditor, Project } from '../api/types';
 import { AttributeValueEditor } from '../components/AttributeValueEditor';
 import { DataTable } from '../components/DataTable';
 import type { Column } from '../components/DataTable';
+import { AttributePicker } from '../components/AttributePicker';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 
 type Draft = { values: Record<string, AttributeValueInput>; removed: string[] };
 const emptyProject = { name: '', periodStart: '', periodEnd: '', description: '', tags: [] as string[] };
@@ -28,15 +30,11 @@ export function ProfilePage() {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [selectedInfo, setSelectedInfo] = useState<string[]>([]);
-  const [library, setLibrary] = useState<AttributeDefinition[]>([]);
-  const [categories, setCategories] = useState<AttributeCategory[]>([]);
-  const [prefix, setPrefix] = useState('');
-  const [category, setCategory] = useState('');
-  const [attributeId, setAttributeId] = useState('');
   const [projectForm, setProjectForm] = useState(emptyProject);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [showProject, setShowProject] = useState(false);
   const [tagOptions, setTagOptions] = useState<string[]>([]);
+  useUnsavedChanges(Object.keys(draft.values).length > 0 || draft.removed.length > 0 || showProject);
 
   const changeDraft = (next: Draft) => {
     draftRef.current = next;
@@ -56,17 +54,7 @@ export function ProfilePage() {
   }, [id]);
 
   useEffect(() => { void load().catch((e: Error) => setError(e.message)); }, [load]);
-  useEffect(() => {
-    let active = true;
-    const timer = window.setTimeout(() => {
-      void attributesApi.search(prefix, category).then(result => { if (active) setLibrary(result); }).catch((e: Error) => { if (active) setError(e.message); });
-    }, 250);
-    return () => { active = false; window.clearTimeout(timer); };
-  }, [prefix, category]);
-  useEffect(() => {
-    void attributesApi.categories().then(setCategories).catch((e: Error) => setError(e.message));
-    void profilesApi.tagSuggestions('').then(setTagOptions).catch(() => undefined);
-  }, []);
+  useEffect(() => { void profilesApi.tagSuggestions('').then(setTagOptions).catch(() => undefined); }, []);
 
   // Keep the interval independent of keystrokes. Only acknowledge the submitted snapshot.
   useEffect(() => {
@@ -114,14 +102,6 @@ export function ProfilePage() {
 
   const setValue = (attributeDefinitionId: string, value: AttributeValueInput) =>
     changeDraft({ values: { ...draftRef.current.values, [attributeDefinitionId]: value }, removed: draftRef.current.removed.filter(x => x !== attributeDefinitionId) });
-  const addAttribute = () => {
-    const definition = library.find(x => x.id === attributeId);
-    if (!definition || !profileRef.current) return;
-    const next = { ...profileRef.current, infoDefinitions: [...profileRef.current.infoDefinitions.filter(x => x.id !== definition.id), definition] };
-    profileRef.current = next; setProfile(next);
-    setValue(definition.id, { ...emptyAttributeValue });
-    setAttributeId('');
-  };
   const removeAttributes = () => {
     const values = { ...draftRef.current.values };
     selectedInfo.forEach(key => { delete values[key]; });
@@ -159,14 +139,14 @@ export function ProfilePage() {
     {error && <Alert variant="danger">{error}</Alert>}
     {status === 'conflict' && <Alert variant="warning">{t('profile.conflictNotice')} <Button disabled={busy.current} onClick={() => { if (window.confirm(t('profile.discardNotice'))) void load().catch((e: Error) => setError(e.message)); }}>{t('common.reload')}</Button></Alert>}
     <Tabs defaultActiveKey="me" className="mb-3">
-      <Tab eventKey="me" title={t('profile.me')}><div className="d-grid gap-3">{profile.builtInDefinitions.map(d => <div key={d.id}><Form.Label>{d.name}</Form.Label>{renderEditor(d)}</div>)}</div></Tab>
+      <Tab eventKey="me" title={t('profile.me')}><div className="d-grid gap-3">{profile.builtInDefinitions.map(d => <div key={d.id}><Form.Label>{d.systemKey ? t('profile.' + d.systemKey[0].toLowerCase() + d.systemKey.slice(1), { defaultValue: d.name }) : d.name}</Form.Label>{renderEditor(d)}</div>)}</div></Tab>
       <Tab eventKey="info" title={t('profile.info')}>
-        <div className="d-flex flex-wrap gap-2 mb-3">
-          <Form.Control style={{ maxWidth: 240 }} aria-label={t('attributes.prefix')} placeholder={t('attributes.prefix')} value={prefix} onChange={e => setPrefix(e.target.value)} />
-          <Form.Select style={{ maxWidth: 240 }} aria-label={t('attributes.category')} value={category} onChange={e => setCategory(e.target.value)}><option value="">{t('attributes.category')}</option>{categories.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</Form.Select>
-          <Form.Select style={{ maxWidth: 300 }} aria-label={t('attributes.title')} value={attributeId} onChange={e => setAttributeId(e.target.value)}><option value="">{t('attributes.title')}</option>{library.filter(x => !x.isBuiltIn && (!profile.infoDefinitions.some(d => d.id === x.id) || draft.removed.includes(x.id))).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</Form.Select>
-          <Button disabled={!attributeId} onClick={addAttribute}>{t('positions.addAttribute')}</Button>
-        </div>
+        <AttributePicker onSelect={definition => {
+          if (definition.isBuiltIn || !profileRef.current || profileRef.current.infoDefinitions.some(x => x.id === definition.id)) return;
+          const next = { ...profileRef.current, infoDefinitions: [...profileRef.current.infoDefinitions, definition] };
+          profileRef.current = next; setProfile(next); setValue(definition.id, { ...emptyAttributeValue });
+        }} />
+
         <DataTable columns={[{ key: 'name', header: t('common.name'), render: d => d.name }, { key: 'value', header: t('common.value'), render: renderEditor }]} rows={profile.infoDefinitions.filter(d => !draft.removed.includes(d.id))} rowKey={d => d.id} selectedIds={selectedInfo} onSelectionChange={setSelectedInfo} emptyText={t('common.empty')} toolbar={<Button variant="outline-danger" disabled={!selectedInfo.length} onClick={removeAttributes}>{t('common.remove')}</Button>} />
       </Tab>
       <Tab eventKey="projects" title={t('profile.projects')}><DataTable columns={projectColumns} rows={profile.projects} rowKey={x => x.id} selectedIds={selected} onSelectionChange={setSelected} emptyText={t('common.empty')} toolbar={<div className="d-flex gap-2">
@@ -183,7 +163,7 @@ export function ProfilePage() {
       <Form.Label>{t('profile.periodEnd')}<Form.Control type="date" min={projectForm.periodStart} value={projectForm.periodEnd} onChange={e => setProjectForm({ ...projectForm, periodEnd: e.target.value })} /></Form.Label>
       <Form.Label>{t('common.description')}<Form.Control as="textarea" rows={4} value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} /></Form.Label>
       <Markdown>{projectForm.description}</Markdown>
-      <CreatableSelect isMulti aria-label={t('profile.tags')} placeholder={t('profile.tags')} options={tagOptions.map(value => ({ value, label: value }))} value={projectForm.tags.map(value => ({ value, label: value }))} onChange={items => setProjectForm({ ...projectForm, tags: items.map(x => x.value) })} />
+      <CreatableSelect isMulti noOptionsMessage={() => t('common.empty')} formatCreateLabel={value => t('common.create') + ': ' + value} aria-label={t('profile.tags')} placeholder={t('profile.tags')} options={tagOptions.map(value => ({ value, label: value }))} value={projectForm.tags.map(value => ({ value, label: value }))} onChange={items => setProjectForm({ ...projectForm, tags: items.map(x => x.value) })} />
     </Modal.Body><Modal.Footer><Button variant="secondary" onClick={() => setShowProject(false)}>{t('common.cancel')}</Button><Button disabled={!projectForm.name.trim() || !projectForm.periodStart || (!!projectForm.periodEnd && projectForm.periodEnd < projectForm.periodStart)} onClick={() => void runProjectAction(() => {
       const body = { ...projectForm, periodStart: new Date(projectForm.periodStart).toISOString(), periodEnd: projectForm.periodEnd ? new Date(projectForm.periodEnd).toISOString() : null };
       return projectId ? profilesApi.updateProject(profile.id, projectId, body) : profilesApi.addProject(profile.id, body);

@@ -8,7 +8,7 @@ import { Icon } from './Icon';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { t, i18n } = useTranslation();
-  const { isAuthenticated, isStaff, profile, signOut } = useAuth();
+  const { isAuthenticated, isStaff, isAdmin, profile, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { to: '/cvs', label: t('nav.cvs'), icon: 'cv' as const, visible: isAuthenticated },
     { to: '/profile', label: t('nav.profile'), icon: 'profile' as const, visible: isAuthenticated },
     { to: '/attributes', label: t('nav.attributes'), icon: 'library' as const, visible: isStaff },
+    { to: '/users', label: ru ? 'Пользователи' : 'Users', icon: 'profile' as const, visible: isAdmin },
   ];
   const title = items.find(x => x.to === '/' ? pathname === '/' : pathname.startsWith(x.to))?.label ?? (pathname === '/search' ? t('common.search') : t('app.title'));
   const subtitles: Record<string, string> = {

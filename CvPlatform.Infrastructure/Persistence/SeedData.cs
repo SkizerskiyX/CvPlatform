@@ -27,14 +27,9 @@ public static class SeedData
 
         await MigrateAsync(db, logger, cancellationToken);
 
-        var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in RoleNames.All)
-        {
-            if (!await roleManager.RoleExistsAsync(role))
-            {
-                await roleManager.CreateAsync(new IdentityRole(role));
-            }
-        }
+        var existingRoles = await db.Roles.Select(x => x.Name!).ToListAsync(cancellationToken);
+        db.Roles.AddRange(RoleNames.All.Except(existingRoles).Select(role => new IdentityRole(role) { NormalizedName = role.ToUpperInvariant() }));
+        await db.SaveChangesAsync(cancellationToken);
 
         // Predefined list of attribute categories.
         var existingCategories = await db.AttributeCategories.Select(x => x.Name).ToListAsync(cancellationToken);
@@ -143,7 +138,8 @@ public static class SeedData
 
     private static async Task EnsureUsersAsync(IServiceProvider provider, AppDbContext db, CancellationToken cancellationToken)
     {
-        var userManager = provider.GetRequiredService<UserManager<ApplicationUser>>();
+        var hasher = provider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
+        var normalizer = provider.GetRequiredService<ILookupNormalizer>();
         var demo = new (string Email, string Password, string Role, string First, string Last)[]
         {
             ("admin@cv.local", "Admin123!", RoleNames.Admin, "Admin", "User"),
@@ -151,17 +147,25 @@ public static class SeedData
             ("candidate@cv.local", "Candidate123!", RoleNames.Candidate, "Carl", "Candidate")
         };
 
+        var emails = demo.Select(x => x.Email).ToArray();
+        var existingUsers = await db.Users.Where(x => emails.Contains(x.Email!)).ToDictionaryAsync(x => x.Email!, cancellationToken);
+        var userIds = existingUsers.Values.Select(x => x.Id).ToArray();
+        var existingProfiles = await db.UserProfiles.Where(x => userIds.Contains(x.IdentityUserId)).Select(x => x.IdentityUserId).ToListAsync(cancellationToken);
+        var roles = await db.Roles.ToDictionaryAsync(x => x.Name!, x => x.Id, cancellationToken);
         foreach (var item in demo)
         {
-            var user = await userManager.FindByEmailAsync(item.Email);
+            existingUsers.TryGetValue(item.Email, out var user);
             if (user is null)
             {
-                user = new ApplicationUser { UserName = item.Email, Email = item.Email, EmailConfirmed = true };
-                await userManager.CreateAsync(user, item.Password);
-                await userManager.AddToRoleAsync(user, item.Role);
+                user = new ApplicationUser { UserName = item.Email, Email = item.Email, EmailConfirmed = true,
+                    NormalizedEmail = normalizer.NormalizeEmail(item.Email), NormalizedUserName = normalizer.NormalizeName(item.Email),
+                    SecurityStamp = Guid.NewGuid().ToString("N"), LockoutEnabled = true };
+                user.PasswordHash = hasher.HashPassword(user, item.Password);
+                db.Users.Add(user);
+                db.UserRoles.Add(new IdentityUserRole<string> { UserId = user.Id, RoleId = roles[item.Role] });
             }
 
-            if (!await db.UserProfiles.AnyAsync(x => x.IdentityUserId == user.Id, cancellationToken))
+            if (!existingProfiles.Contains(user.Id))
             {
                 db.UserProfiles.Add(new UserProfile(user.Id, item.First, item.Last, null));
             }

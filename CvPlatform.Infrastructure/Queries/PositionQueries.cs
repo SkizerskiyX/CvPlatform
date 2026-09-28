@@ -46,8 +46,8 @@ public sealed class PositionQueries(AppDbContext db) : IPositionQueries
     public async Task<PositionDetailsDto> DetailsAsync(Actor actor, Guid id, CancellationToken cancellationToken)
     {
         var position = await db.Positions.AsNoTracking()
-            .Include(x => x.PositionAttributes).ThenInclude(x => x.AttributeDefinition)
-            .Include(x => x.AccessRules).ThenInclude(x => x.AttributeDefinition)
+            .Include(x => x.PositionAttributes).ThenInclude(x => x.AttributeDefinition).ThenInclude(x => x!.Category)
+            .Include(x => x.AccessRules).ThenInclude(x => x.AttributeDefinition).ThenInclude(x => x!.Options)
             .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new NotFoundException($"Position '{id}' does not exist.");
@@ -63,7 +63,8 @@ public sealed class PositionQueries(AppDbContext db) : IPositionQueries
         {
             var profile = await db.UserProfiles.AsNoTracking().Include(x => x.AttributeValues).FirstOrDefaultAsync(x => x.Id == profileId, cancellationToken);
             canApply = profile is not null && (actor.IsAdmin || CvService.HasAccess(profile, position));
-            myCvId = await db.Cvs.Where(x => x.ProfileId == profileId && x.PositionId == id).Select(x => (Guid?)x.Id).FirstOrDefaultAsync(cancellationToken);
+            if (!canApply && !actor.IsStaff) throw new ForbiddenException("This position is not available for your profile.");
+            if (canApply) myCvId = await db.Cvs.Where(x => x.ProfileId == profileId && x.PositionId == id).Select(x => (Guid?)x.Id).FirstOrDefaultAsync(cancellationToken);
         }
 
         return new PositionDetailsDto(

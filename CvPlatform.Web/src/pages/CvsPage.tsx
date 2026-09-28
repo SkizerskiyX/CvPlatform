@@ -1,12 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, Card } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Alert, Button, Card } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import { cvsApi } from '../api/endpoints';
 import type { Cv } from '../api/types';
-import { DataTable } from '../components/DataTable'; import type { Column } from '../components/DataTable';
+import { DataTable } from '../components/DataTable';
+import { useText } from '../hooks/useText';
 export function CvsPage() {
-  const navigate = useNavigate(); const [rows, setRows] = useState<Cv[]>([]); const [selected, setSelected] = useState<string[]>([]); const [error, setError] = useState('');
-  const load = useCallback(() => cvsApi.mine().then(setRows).catch((e: Error) => setError(e.message)), []); useEffect(() => { void load(); }, [load]);
-  const columns: Column<Cv>[] = [{ key:'position', header:'Position', render:(x)=><Link to={`/cvs/${x.id}`}>{x.positionTitle}</Link> }, {key:'candidate',header:'Candidate',render:(x)=>x.candidateName}, {key:'status',header:'Status',render:(x)=>x.status}, {key:'likes',header:'Likes',render:(x)=>x.likeCount}, {key:'updated',header:'Updated',render:(x)=>new Date(x.updatedAt).toLocaleDateString()}];
-  return <Card><Card.Body><Card.Title>CVs</Card.Title>{error && <p className="text-danger">{error}</p>}<DataTable columns={columns} rows={rows} rowKey={(x)=>x.id} selectedIds={selected} onSelectionChange={setSelected} onRowClick={(x)=>navigate(`/cvs/${x.id}`)} emptyText="Nothing to display." toolbar={<div className="d-flex gap-2"><Button size="sm" variant="outline-success" disabled={!selected.length} onClick={async()=>{for(const id of selected) await cvsApi.publish(id); await load();}}>Publish</Button><Button size="sm" variant="outline-secondary" disabled={!selected.length} onClick={async()=>{for(const id of selected) await cvsApi.unpublish(id); await load();}}>Unpublish</Button><Button size="sm" variant="outline-danger" disabled={!selected.length} onClick={async()=>{await cvsApi.remove(selected);setSelected([]);await load();}}>Delete</Button></div>} /></Card.Body></Card>;
+  const text = useText(); const [rows, setRows] = useState<Cv[]>([]); const [selected, setSelected] = useState<string[]>([]); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const load = () => cvsApi.mine().then(setRows);
+  useEffect(() => { void load().catch(e => setError(e.message)); }, []);
+  const run = async (action: 'publish' | 'unpublish' | 'remove') => {
+    if (action === 'remove' && !confirm(text('Delete selected CVs?', 'Удалить выбранные резюме?'))) return;
+    setBusy(true); setError('');
+    try { if (action === 'remove') await cvsApi.remove(selected); else await Promise.all(selected.map(id => cvsApi[action](id))); setSelected([]); await load(); }
+    catch (e) { setError((e as Error).message); await load().catch(() => undefined); }
+    finally { setBusy(false); }
+  };
+  return <Card><Card.Body><Card.Title>{text('My CVs', 'Мои резюме')}</Card.Title>{error && <Alert variant="danger">{error}</Alert>}<DataTable rows={rows} rowKey={x => x.id} selectedIds={selected} onSelectionChange={setSelected} emptyText={text('No CVs yet. Choose a position to generate one.', 'Пока нет резюме. Выберите позицию для создания.')} columns={[
+    { key: 'position', header: text('Position', 'Позиция'), render: x => <Link to={'/cvs/' + x.id}>{x.positionTitle}</Link> }, { key: 'candidate', header: text('Candidate', 'Кандидат'), render: x => x.candidateName }, { key: 'status', header: text('Status', 'Статус'), render: x => x.status === 'Published' ? text('Published', 'Опубликовано') : text('Draft', 'Черновик') }, { key: 'likes', header: text('Likes', 'Лайки'), render: x => x.likeCount }, { key: 'updated', header: text('Updated', 'Обновлено'), render: x => new Date(x.updatedAt).toLocaleDateString() }
+  ]} toolbar={<div className="d-flex flex-wrap gap-2"><Link className="btn btn-outline-primary" to="/positions">{text('Find a position', 'Выбрать позицию')}</Link>{(['publish', 'unpublish', 'remove'] as const).map(action => <Button key={action} disabled={busy || !selected.length} variant={action === 'remove' ? 'outline-danger' : 'outline-secondary'} onClick={() => void run(action)}>{action === 'publish' ? text('Publish', 'Опубликовать') : action === 'unpublish' ? text('Unpublish', 'Снять с публикации') : text('Delete', 'Удалить')}</Button>)}</div>} /></Card.Body></Card>;
 }

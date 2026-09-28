@@ -5,13 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { discoveryApi } from '../api/endpoints';
 import type { SearchResult } from '../api/types';
 export function SearchPage() {
-  const [params] = useSearchParams(); const q = params.get('q') ?? '';
+  const [params] = useSearchParams(); const q = params.get('q') ?? ''; const tag = params.get('tag') ?? '';
   const { i18n } = useTranslation(); const ru = i18n.language.startsWith('ru');
   const [result, setResult] = useState<SearchResult | null>(null);
   const [error, setError] = useState('');
-  useEffect(() => { let active = true; setResult(null); setError(''); void discoveryApi.search(q).then(value => { if (active) setResult(value); }).catch((e: Error) => { if (active) setError(e.message); }); return () => { active = false; }; }, [q]);
+  useEffect(() => { let active = true; setResult(null); setError(''); void discoveryApi.search(q, tag || undefined).then(value => { if (active) setResult({ ...value, positions: params.get('kind') === 'cvs' ? [] : value.positions, cvs: params.get('kind') === 'positions' ? [] : value.cvs }); }).catch((e: Error) => { if (active) setError(e.message); }); return () => { active = false; }; }, [q, tag, params]);
   return <div className="d-grid gap-4">
-    <p className="search-summary">{ru ? 'Результаты для' : 'Results for'} <strong>“{q}”</strong>{result && ' · ' + (result.positions.length + result.cvs.length)}</p>
+    <p className="search-summary">{ru ? 'Результаты для' : 'Results for'} <strong>“{q || tag}”</strong>{result && ' · ' + (result.positions.length + result.cvs.length)}</p>
     {error && <Alert variant="danger">{error}</Alert>}
     {!result && !error && <p role="status">{ru ? 'Ищем подходящие результаты…' : 'Finding matching results…'}</p>}
     {result && !result.positions.length && !result.cvs.length && <div className="workspace-panel empty-state"><h2>{ru ? 'Совпадений пока нет' : 'No matches yet'}</h2><p className="mx-auto">{ru ? 'Попробуйте название позиции, навык или другое ключевое слово.' : 'Try a position title, a skill, or another keyword.'}</p><Link to="/positions">{ru ? 'Посмотреть все позиции' : 'Browse all positions'}</Link></div>}

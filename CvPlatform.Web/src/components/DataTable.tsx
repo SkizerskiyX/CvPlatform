@@ -44,7 +44,7 @@ export function DataTable<T>({
         <thead>
           <tr>
             <th className="selection-cell">
-              <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="select-all" />
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label={ru ? 'Выбрать все' : 'Select all'} />
             </th>
             {columns.map((column) => (
               <th key={column.key}>{column.header}</th>

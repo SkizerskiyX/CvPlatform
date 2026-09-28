@@ -24,7 +24,8 @@ public sealed class CvQueries(AppDbContext db, IAttributeDefinitionRepository de
         }
 
         var position = await db.Positions.AsNoTracking()
-            .Include(x => x.PositionAttributes).ThenInclude(x => x.AttributeDefinition)
+            .Include(x => x.PositionAttributes).ThenInclude(x => x.AttributeDefinition).ThenInclude(x => x!.Options)
+            .Include(x => x.PositionAttributes).ThenInclude(x => x.AttributeDefinition).ThenInclude(x => x!.Category)
             .Include(x => x.AccessRules).ThenInclude(x => x.AttributeDefinition)
             .AsSplitQuery()
             .FirstAsync(x => x.Id == cv.PositionId, cancellationToken);

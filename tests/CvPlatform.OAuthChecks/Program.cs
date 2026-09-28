@@ -3,10 +3,15 @@ using System.Security.Claims;
 using CvPlatform.API.Controllers;
 using CvPlatform.API.Security;
 using CvPlatform.Application.Services;
+using CvPlatform.Application.Common;
+using CvPlatform.Application.DTOs;
+using CvPlatform.Application.Security;
+using CvPlatform.Domain.Enums;
 using CvPlatform.Domain.Entities;
 using CvPlatform.Infrastructure.Identity;
 using CvPlatform.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -61,7 +66,40 @@ using (var f = new Fixture(Info("new@example.com")))
     Assert(login.Url!.EndsWith("error=unavailable"), "disabled OAuth challenge");
     Console.WriteLine("PASS disabled OAuth routes");
 }
-Console.WriteLine("13 authentication checks passed. No database or provider requests made.");
+foreach (var state in new[] { "deleted", "blocked", "changed-roles" })
+{
+    var profileId = Guid.NewGuid();
+    var directory = Stub.Create<IUserDirectory>((_, _) => Task.FromResult<UserSnapshot?>(state == "deleted" ? null : new("u1", "user@example.com", profileId, state == "blocked", ["Candidate"], null, null)));
+    using var services = new ServiceCollection().AddSingleton(directory).BuildServiceProvider();
+    var context = new TokenValidatedContext(new DefaultHttpContext { RequestServices = services }, new AuthenticationScheme("Bearer", null, typeof(JwtBearerHandler)), new JwtBearerOptions())
+    {
+        Principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "u1"), new Claim(ClaimTypes.Role, "Admin"), new Claim("profileId", Guid.NewGuid().ToString())], "Bearer"))
+    };
+    await CurrentUserValidation.Validate(context);
+    if (state == "changed-roles") Assert(!context.Principal.IsInRole("Admin") && context.Principal.IsInRole("Candidate") && context.Principal.FindFirstValue("profileId") == profileId.ToString(), "stale JWT roles replaced");
+    else Assert(context.Result?.Failure is not null, "invalid account rejected");
+    Console.WriteLine("PASS JWT " + state);
+}
+Console.WriteLine("16 authentication checks passed. No database or provider requests made.");
+
+var numeric = new AttributeDefinition("Score", null, AttributeDataType.Numeric, Guid.NewGuid());
+Assert(AccessRuleEvaluator.Matches(numeric, AttributeValueInput.Empty with { NumericValue = 8 }, ComparisonOperator.GreaterThan, "7"), "numeric access rule");
+Assert(!AccessRuleEvaluator.Matches(numeric, AttributeValueInput.Empty with { NumericValue = 7 }, ComparisonOperator.GreaterThan, "7"), "numeric boundary");
+Assert(!AccessRuleEvaluator.Matches(numeric, AttributeValueInput.Empty, ComparisonOperator.GreaterThan, "7"), "missing access value");
+var boolean = new AttributeDefinition("Remote", null, AttributeDataType.Boolean, Guid.NewGuid());
+Assert(AccessRuleEvaluator.Matches(boolean, AttributeValueInput.Empty with { BoolValue = false }, ComparisonOperator.EqualTo, "false"), "false is a filled boolean");
+var dropdown = new AttributeDefinition("English", null, AttributeDataType.Dropdown, Guid.NewGuid());
+dropdown.SetOptions(["Advanced", "Beginner"]);
+var optionId = dropdown.Options.First().Id;
+dropdown.SetOptions(["Advanced", "Intermediate"]);
+Assert(dropdown.Options.First(x => x.Value == "Advanced").Id == optionId, "existing dropdown IDs survive editing");
+Assert(AccessRuleEvaluator.Matches(dropdown, AttributeValueInput.Empty with { SelectedOptionId = optionId }, ComparisonOperator.In, optionId.ToString()), "dropdown access rule");
+var template = new Position("Engineer", null, true);
+template.UpdateBasics("Engineer", null, null, null, true, 1, ["react"]);
+var owner = Guid.NewGuid();
+var projects = new[] { new Project(owner, "Relevant", DateTime.UtcNow, null, null, ["react"]), new Project(owner, "Unrelated", DateTime.UtcNow.AddDays(1), null, null, ["java"]) };
+Assert(CvComposer.SelectProjects(template, projects).Single().Name == "Relevant", "CV project tag filtering and limit");
+Console.WriteLine("7 domain requirement checks passed.");
 
 static ExternalLoginInfo Info(string? email)
 {

@@ -3,6 +3,7 @@ import Markdown from 'react-markdown';
 import Select from 'react-select';
 import { useTranslation } from 'react-i18next';
 import type { AttributeDataType, AttributeOption, AttributeValueInput } from '../api/types';
+import { ImageUpload } from './ImageUpload';
 
 type AttributeValueEditorProps = {
   dataType: AttributeDataType;
@@ -88,6 +89,8 @@ export function AttributeValueEditor({ dataType, options, value, onChange }: Att
     const selectOptions = options.map((option) => ({ value: option.id, label: option.value }));
     return (
       <Select
+        placeholder={t('common.value')}
+        noOptionsMessage={() => t('common.empty')}
         options={selectOptions}
         value={selectOptions.find((option) => option.value === value.selectedOptionId) ?? null}
         onChange={(option) => onChange({ ...value, selectedOptionId: option?.value ?? null })}
@@ -95,5 +98,5 @@ export function AttributeValueEditor({ dataType, options, value, onChange }: Att
     );
   }
 
-  return <div><Form.Control type="url" placeholder="https://cloud.example/image.jpg" value={value.imageUrl ?? ''} onChange={(event) => onChange({ ...value, imageUrl: event.target.value || null })} />{value.imageUrl && <img className="photo-preview mt-2" src={value.imageUrl} alt={t('profile.photo')} />}</div>;
+  return <ImageUpload value={value.imageUrl} onChange={imageUrl => onChange({ ...value, imageUrl: imageUrl || null })} />;
 }

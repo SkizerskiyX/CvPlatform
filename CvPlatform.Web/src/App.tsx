@@ -11,6 +11,15 @@ import { ProfilePage } from './pages/ProfilePage';
 import { OAuthCallbackPage, RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SearchPage } from './pages/SearchPage';
+import { PositionEditorPage } from './pages/PositionEditorPage';
+import { PublicProfilePage } from './pages/PublicProfilePage';
+import { UsersPage } from './pages/UsersPage';
+
+function StaffOnly({ children, admin = false }: { children: React.ReactNode; admin?: boolean }) {
+  const { isStaff, isAdmin, loading } = useAuth();
+  if (loading) return null;
+  return (admin ? isAdmin : isStaff) ? <>{children}</> : <Navigate to="/" replace />;
+}
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -29,8 +38,12 @@ export function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/positions" element={<PositionsPage />} />
+        <Route path="/positions/new" element={<StaffOnly><PositionEditorPage /></StaffOnly>} />
+        <Route path="/positions/:id/edit" element={<StaffOnly><PositionEditorPage /></StaffOnly>} />
         <Route path="/positions/:id" element={<PositionDetailsPage />} />
-        <Route path="/attributes" element={<AttributesPage />} />
+        <Route path="/attributes" element={<Protected><AttributesPage /></Protected>} />
+        <Route path="/users" element={<StaffOnly admin><UsersPage /></StaffOnly>} />
+        <Route path="/profiles/:id" element={<Protected><PublicProfilePage /></Protected>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/oauth-callback" element={<OAuthCallbackPage />} />

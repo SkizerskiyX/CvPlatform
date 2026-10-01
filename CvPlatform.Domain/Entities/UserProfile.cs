@@ -21,19 +21,27 @@ public sealed class UserProfile : BaseEntity
 
     public string IdentityUserId { get; private set; } = null!;
 
-    // Storage of the built-in "Me" attributes (see BuiltInAttributes). They are read and
-    // written through the same attribute engine as library attributes.
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string? Location { get; private set; }
     public string? PhotoUrl { get; private set; }
+    public string? SalesforceAccountId { get; private set; }
+    public string? SalesforceContactId { get; private set; }
+    public DateTime? SalesforceConnectedAt { get; private set; }
+
+    public void ConnectSalesforce(string accountId, string contactId)
+    {
+        SalesforceAccountId = accountId;
+        SalesforceContactId = contactId;
+        SalesforceConnectedAt = DateTime.UtcNow;
+        RefreshUpdatedAt();
+    }
 
     public IReadOnlyCollection<ProfileAttributeValue> AttributeValues => _attributeValues.AsReadOnly();
     public IReadOnlyCollection<Project> Projects => _projects.AsReadOnly();
 
     public string DisplayName => $"{FirstName} {LastName}".Trim();
 
-    /// <summary>Marks the aggregate root as modified so its version (xmin) is checked and bumped.</summary>
     public void Touch() => RefreshUpdatedAt();
 
     public string? GetBuiltIn(string key) => key switch

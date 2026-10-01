@@ -16,7 +16,6 @@ public interface IPositionService
     Task<VersionResponse> DuplicateAsync(Actor actor, Guid id, CancellationToken cancellationToken);
 }
 
-/// <summary>All recruiters share all positions: there is no ownership, any recruiter (or admin) may change any position.</summary>
 public sealed class PositionService(
     IPositionRepository positions,
     IAttributeDefinitionRepository definitions,

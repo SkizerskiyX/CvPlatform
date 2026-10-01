@@ -8,7 +8,6 @@ using NpgsqlTypes;
 
 namespace CvPlatform.Infrastructure.Queries;
 
-/// <summary>Full-text search over PostgreSQL tsvector columns (GIN-indexed).</summary>
 public sealed class SearchQueries(AppDbContext db, PositionQueries positionQueries) : ISearchQueries
 {
     private const int MaxResults = 50;

@@ -23,6 +23,8 @@ a:hover { color: var(--cv-primary-hover); text-decoration: underline; text-under
 button, input, select, textarea { font: inherit; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--cv-primary); outline-offset: 4px; }
+.crm-profile-summary { display: grid; gap: 4px; padding: 16px 18px; border-left: 3px solid var(--cv-primary); background: var(--cv-raised); overflow-wrap: anywhere; }
+.crm-profile-summary span { color: var(--cv-muted); }
 button:disabled { cursor: not-allowed; }
 h1 { font-family: 'Literata', Georgia, serif; font-weight: 400; letter-spacing: -.04em; line-height: 1.16; }
 h2, h3, h4, h5, h6 { color: var(--cv-text); }

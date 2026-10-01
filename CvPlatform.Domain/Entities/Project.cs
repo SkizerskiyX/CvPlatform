@@ -10,10 +10,6 @@ public sealed class Project : BaseEntity
     {
     }
 
-    /// <summary>
-    /// Projects are managed as separate entities (not through the profile aggregate) so that
-    /// editing projects does not bump the profile version used by the auto-save.
-    /// </summary>
     public Project(Guid profileId, string name, DateTime periodStart, DateTime? periodEnd, string? description, IEnumerable<string> tags)
     {
         ProfileId = Guard.Against.Default(profileId);

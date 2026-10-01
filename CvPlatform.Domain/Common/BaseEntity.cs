@@ -11,10 +11,6 @@ public abstract class BaseEntity : IEquatable<BaseEntity>
 
     public Guid Id { get; private set; }
 
-    /// <summary>
-    /// Optimistic concurrency token. Mapped to the PostgreSQL system column <c>xmin</c>,
-    /// so it changes automatically on every UPDATE of the row.
-    /// </summary>
     public uint Version { get; private set; }
 
     public DateTime CreatedAt { get; private set; }

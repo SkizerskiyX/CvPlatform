@@ -18,7 +18,6 @@ public sealed record UserAdminDto(
 
 public interface IUserDirectory
 {
-    /// <summary>Current state of the user (roles, lock-out) loaded with a single query; used on every authenticated request.</summary>
     Task<UserSnapshot?> GetSnapshotAsync(string userId, CancellationToken cancellationToken);
     Task SetPreferencesAsync(string userId, string? language, string? theme, CancellationToken cancellationToken);
 }
@@ -115,7 +114,6 @@ public sealed class UserAdministration(AppDbContext db) : IUserDirectory, IUserA
     {
         EnsureNotSelf(actorUserId, userIds, "delete");
 
-        // Profiles (and their values, projects, CVs, likes, posts) are removed by ON DELETE CASCADE.
         await db.Users.Where(u => userIds.Contains(u.Id)).ExecuteDeleteAsync(cancellationToken);
     }
 
@@ -128,7 +126,6 @@ public sealed class UserAdministration(AppDbContext db) : IUserDirectory, IUserA
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>Administrators may also remove their own Administrator role.</summary>
     public async Task RemoveRoleAsync(IReadOnlyCollection<string> userIds, string role, CancellationToken cancellationToken)
     {
         var roleId = await GetRoleIdAsync(role, cancellationToken);

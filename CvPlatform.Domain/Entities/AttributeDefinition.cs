@@ -26,7 +26,6 @@ public sealed class AttributeDefinition : BaseEntity
     public Guid CategoryId { get; private set; }
     public AttributeCategory? Category { get; private set; }
 
-    /// <summary>Non-null for built-in ("Me") attributes that cannot be removed.</summary>
     public string? SystemKey { get; private set; }
 
     public bool IsBuiltIn => SystemKey is not null;
@@ -59,10 +58,6 @@ public sealed class AttributeDefinition : BaseEntity
         }
     }
 
-    /// <summary>
-    /// Synchronizes dropdown options by value: keeps existing ones (so stored selections stay valid),
-    /// adds new ones and removes missing ones.
-    /// </summary>
     public void SetOptions(IReadOnlyList<string> values)
     {
         if (DataType != AttributeDataType.Dropdown)

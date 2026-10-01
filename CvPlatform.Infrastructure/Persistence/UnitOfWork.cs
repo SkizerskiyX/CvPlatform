@@ -12,13 +12,11 @@ public sealed class UnitOfWork(AppDbContext db) : IUnitOfWork
 
     public void ExpectVersion(BaseEntity entity, uint version)
     {
-        // Fast path: reject stale versions before doing any work...
         if (version == 0 || entity.Version != version)
         {
             throw new ConcurrencyConflictException(ConflictMessage);
         }
 
-        // ...and let the database enforce it atomically (UPDATE ... WHERE xmin = @version).
         db.Entry(entity).Property(x => x.Version).OriginalValue = version;
     }
 

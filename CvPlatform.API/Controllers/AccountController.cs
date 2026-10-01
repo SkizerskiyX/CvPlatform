@@ -78,7 +78,6 @@ public sealed class AccountController(UserManager<ApplicationUser> users, SignIn
         {
             var info = await signIn.GetExternalLoginInfoAsync();
             if (info is null) return ExternalError("external");
-            // Provider ID is the identity. Email alone must never grant access to an existing account.
             var user = await users.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             if (user is null)

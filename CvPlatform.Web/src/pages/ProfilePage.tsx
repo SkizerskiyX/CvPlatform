@@ -13,6 +13,7 @@ import { DataTable } from '../components/DataTable';
 import type { Column } from '../components/DataTable';
 import { AttributePicker } from '../components/AttributePicker';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { SalesforceProfileAction } from '../components/SalesforceProfileAction';
 
 type Draft = { values: Record<string, AttributeValueInput>; removed: string[] };
 const emptyProject = { name: '', periodStart: '', periodEnd: '', description: '', tags: [] as string[] };
@@ -134,7 +135,9 @@ export function ProfilePage() {
     { key: 'tags', header: t('profile.tags'), render: x => x.tags.join(', ') },
   ];
   return <Card><Card.Body>
-    <Card.Title>{t('profile.title')}</Card.Title>
+    <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"><Card.Title className="mb-0">{t('profile.title')}</Card.Title>
+      <SalesforceProfileAction profileId={profile.id} disabled={busy.current || Object.keys(draft.values).length > 0 || draft.removed.length > 0} onConnected={load} />
+    </div>
     <p role="status">{t('profile.autosave.' + status)}</p>
     {error && <Alert variant="danger">{error}</Alert>}
     {status === 'conflict' && <Alert variant="warning">{t('profile.conflictNotice')} <Button disabled={busy.current} onClick={() => { if (window.confirm(t('profile.discardNotice'))) void load().catch((e: Error) => setError(e.message)); }}>{t('common.reload')}</Button></Alert>}

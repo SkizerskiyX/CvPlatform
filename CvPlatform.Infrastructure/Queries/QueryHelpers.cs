@@ -11,10 +11,6 @@ namespace CvPlatform.Infrastructure.Queries;
 
 internal static partial class FullText
 {
-    /// <summary>
-    /// Converts free user input into a safe prefix tsquery: "senior dot" -> "senior:* &amp; dot:*".
-    /// Only letters and digits survive, so no tsquery syntax can be injected.
-    /// </summary>
     public static string? ToPrefixQuery(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -65,10 +61,6 @@ internal static class CvRows
         row.UpdatedAt,
         accessible);
 
-    /// <summary>
-    /// Applies CV visibility for the actor. Hidden when the candidate lost access to the position:
-    /// admins still see such CVs (flagged), everyone else does not. Recruiters see published CVs only.
-    /// </summary>
     public static async Task<IReadOnlyList<CvListItemDto>> ToVisibleDtosAsync(AppDbContext db, Actor actor, IReadOnlyList<CvRow> rows, CancellationToken cancellationToken)
     {
         var accessible = await AccessBatch.AccessiblePairsAsync(db, rows.Select(x => (x.ProfileId, x.PositionId)).ToArray(), cancellationToken);
@@ -82,9 +74,6 @@ internal static class CvRows
 
 internal static class AccessBatch
 {
-    /// <summary>
-    /// Evaluates access rules for many (profile, position) pairs with a constant number of queries.
-    /// </summary>
     public static async Task<HashSet<(Guid ProfileId, Guid PositionId)>> AccessiblePairsAsync(
         AppDbContext db,
         IReadOnlyCollection<(Guid ProfileId, Guid PositionId)> pairs,

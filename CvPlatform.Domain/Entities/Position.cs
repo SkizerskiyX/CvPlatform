@@ -30,7 +30,6 @@ public sealed class Position : BaseEntity
     public string? Company { get; private set; }
     public PositionLevel? Level { get; private set; }
 
-    /// <summary>Public positions are accessible to all authenticated users; otherwise access rules apply.</summary>
     public bool IsPublic { get; private set; }
 
     public int MaxProjects { get; private set; }
@@ -50,7 +49,6 @@ public sealed class Position : BaseEntity
         RefreshUpdatedAt();
     }
 
-    /// <summary>Replaces the template attributes; list order is the display order.</summary>
     public void SetAttributes(IReadOnlyList<Guid> attributeDefinitionIds)
     {
         if (attributeDefinitionIds.Distinct().Count() != attributeDefinitionIds.Count)

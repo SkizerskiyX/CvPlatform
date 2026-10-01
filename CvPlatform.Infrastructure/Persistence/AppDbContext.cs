@@ -35,7 +35,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
             entity.Property(nameof(BaseEntity.CreatedAt)).IsRequired();
             entity.Property(nameof(BaseEntity.UpdatedAt)).IsRequired();
 
-            // Optimistic locking: PostgreSQL system column xmin changes on every row update.
             entity.Property(nameof(BaseEntity.Version)).IsRowVersion();
         }
     }
@@ -45,8 +44,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
         ChangeTracker.DetectChanges();
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
-            // New child entities discovered through aggregate navigations have client-generated keys;
-            // they have never been read from the database (xmin == 0), so they must be inserted.
             if (entry.State == EntityState.Modified && entry.Property(x => x.Version).OriginalValue == 0)
             {
                 entry.State = EntityState.Added;

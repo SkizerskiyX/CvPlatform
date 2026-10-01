@@ -19,8 +19,6 @@ public sealed record AttributeValueInput(
 }
 
 public sealed record AttributeValueView(Guid AttributeDefinitionId, AttributeValueInput Value, string? Display);
-
-// ---------- Attribute library ----------
 public sealed record AttributeCategoryDto(Guid Id, string Name);
 public sealed record AttributeOptionDto(Guid Id, string Value, int DisplayOrder);
 public sealed record AttributeDefinitionDto(

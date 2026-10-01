@@ -31,7 +31,6 @@ public static class SeedData
         db.Roles.AddRange(RoleNames.All.Except(existingRoles).Select(role => new IdentityRole(role) { NormalizedName = role.ToUpperInvariant() }));
         await db.SaveChangesAsync(cancellationToken);
 
-        // Predefined list of attribute categories.
         var existingCategories = await db.AttributeCategories.Select(x => x.Name).ToListAsync(cancellationToken);
         db.AttributeCategories.AddRange(Categories.Except(existingCategories).Select(name => new AttributeCategory(name)));
         await db.SaveChangesAsync(cancellationToken);
@@ -173,7 +172,6 @@ public static class SeedData
 
         await db.SaveChangesAsync(cancellationToken);
 
-        // Users created before roles existed become candidates.
         var candidateRoleId = await db.Roles.Where(r => r.Name == RoleNames.Candidate).Select(r => r.Id).FirstAsync(cancellationToken);
         var withoutRoles = await db.Users.Where(u => !db.UserRoles.Any(ur => ur.UserId == u.Id)).Select(u => u.Id).ToListAsync(cancellationToken);
         db.UserRoles.AddRange(withoutRoles.Select(id => new IdentityUserRole<string> { UserId = id, RoleId = candidateRoleId }));

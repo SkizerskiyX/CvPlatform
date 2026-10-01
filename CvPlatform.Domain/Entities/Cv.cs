@@ -3,11 +3,6 @@ using CvPlatform.Domain.Enums;
 
 namespace CvPlatform.Domain.Entities;
 
-/// <summary>
-/// A CV is a (candidate, position) pair. Attribute values are not copied into the CV:
-/// the single master value of every attribute lives in the candidate profile, and the CV
-/// is rendered from the profile + position template on the fly.
-/// </summary>
 public sealed class Cv : BaseEntity
 {
     private Cv()

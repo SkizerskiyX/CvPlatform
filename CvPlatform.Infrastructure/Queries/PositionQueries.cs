@@ -112,7 +112,6 @@ public sealed class PositionQueries(AppDbContext db) : IPositionQueries
         return await CvRows.ToVisibleDtosAsync(db, actor, rows, cancellationToken);
     }
 
-    /// <summary>Projects positions into list rows and applies role-based visibility.</summary>
     internal async Task<IReadOnlyList<PositionListItemDto>> VisibleAsync(Actor actor, IQueryable<Position> ordered, int take, CancellationToken cancellationToken)
     {
         if (!actor.IsAuthenticated)

@@ -10,15 +10,20 @@ using CvPlatform.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using CvPlatform.Infrastructure.Integrations.Salesforce;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseStaticWebAssets();
 
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IRoleManagementService, RoleManagementService>();
+builder.Services.Configure<SalesforceOptions>(builder.Configuration.GetSection("Salesforce"));
+builder.Services.AddHttpClient<SalesforceService>();
 
 var authenticationBuilder = builder.Services
     .AddAuthentication(options =>
@@ -90,8 +95,6 @@ builder.Services.AddCors(options => options.AddPolicy("spa", policy => policy
 
 var app = builder.Build();
 
-// Use a trusted, configured origin behind Render's TLS-terminating proxy.
-// Both the authorization request and code exchange must use the same HTTPS callback.
 var publicOriginValue = builder.Configuration["OAuth:PublicOrigin"];
 if (oauthEnabled && !string.IsNullOrWhiteSpace(publicOriginValue))
 {
@@ -131,6 +134,23 @@ app.UseExceptionHandler(handler => handler.Run(async context =>
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+    app.MapOpenApi();
+    app.MapGet("/swagger", () => Results.Redirect("/swagger/index.html"));
+    app.MapGet("/swagger/index.html", () => Results.Content("""
+        <!doctype html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <title>CvPlatform API</title>
+            <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+        </head>
+        <body>
+            <div id="swagger-ui"></div>
+            <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+            <script>SwaggerUIBundle({ url: '/openapi/v1.json', dom_id: '#swagger-ui' });</script>
+        </body>
+        </html>
+        """, "text/html"));
 }
 
 app.UseCors("spa");

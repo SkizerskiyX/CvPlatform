@@ -38,7 +38,6 @@ public sealed class AttributeDefinitionRepository(AppDbContext db) : IAttributeD
         var query = db.AttributeDefinitions.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(namePrefix))
         {
-            // ILIKE 'prefix%' – escaped so user input cannot inject wildcards.
             var pattern = EscapeLike(namePrefix) + "%";
             query = query.Where(x => EF.Functions.ILike(x.Name, pattern, "\\"));
         }

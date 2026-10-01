@@ -8,10 +8,6 @@ namespace CvPlatform.Infrastructure.Persistence.Configurations;
 
 internal static class SearchVectorExtensions
 {
-    /// <summary>
-    /// Adds a stored generated tsvector column (full-text search, 'simple' config works for EN and RU)
-    /// with a GIN index. Columns are concatenated with coalesce so NULLs do not wipe the vector.
-    /// </summary>
     public static void HasSearchVector<T>(this EntityTypeBuilder<T> builder, params string[] columns) where T : class
     {
         var expression = string.Join(" || ' ' || ", columns.Select(c => $"coalesce(\"{c}\", '')"));

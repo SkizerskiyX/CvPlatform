@@ -14,7 +14,6 @@ public interface IDiscussionService
     Task<DiscussionPostDto> AddAsync(Actor actor, Guid positionId, CreateDiscussionPostRequest request, CancellationToken cancellationToken);
 }
 
-/// <summary>Posts are append-only and always ordered by creation time.</summary>
 public sealed class DiscussionService(
     IDiscussionRepository discussions,
     IPositionRepository positions,
@@ -48,7 +47,6 @@ public interface ILikeService
     Task<LikeDto> ToggleAsync(Actor actor, Guid cvId, CancellationToken cancellationToken);
 }
 
-/// <summary>Only recruiters (and admins, who can do everything recruiters can) like published CVs; one like per recruiter per CV.</summary>
 public sealed class LikeService(ILikeRepository likes, ICvRepository cvs, IUnitOfWork unitOfWork) : ILikeService
 {
     public async Task<LikeDto> ToggleAsync(Actor actor, Guid cvId, CancellationToken cancellationToken)
@@ -75,4 +73,8 @@ public sealed class LikeService(ILikeRepository likes, ICvRepository cvs, IUnitO
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new LikeDto(cvId, await likes.CountByCvAsync(cvId, cancellationToken), existing is null);
     }
+   
+          
+
+
 }

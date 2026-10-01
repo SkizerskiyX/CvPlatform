@@ -33,7 +33,6 @@ public sealed class CvQueries(AppDbContext db, IAttributeDefinitionRepository de
 
         if (!actor.IsAdmin && !CvService.HasAccess(profile, position))
         {
-            // The candidate lost access to the position: the CV is kept but hidden.
             throw new ForbiddenException("The position is no longer available for this candidate, so the CV is hidden.");
         }
 

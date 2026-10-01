@@ -12,10 +12,6 @@ public interface IProfileService
 {
     Task<UserProfile> EnsureProfileAsync(string identityUserId, string firstName, string lastName, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Auto-save of a profile page (Me + Info sections, also used by in-place CV editing).
-    /// Applies all changes atomically if <see cref="ProfileAutosaveRequest.Version"/> matches and returns the new version.
-    /// </summary>
     Task<VersionResponse> AutosaveAsync(Actor actor, Guid profileId, ProfileAutosaveRequest request, CancellationToken cancellationToken);
 
     Task<ProjectDto> AddProjectAsync(Actor actor, Guid profileId, SaveProjectRequest request, CancellationToken cancellationToken);
@@ -78,7 +74,6 @@ public sealed class ProfileService(
             AttributeValues.Write(profile, definition, change.Value);
         }
 
-        // The profile row is the aggregate version: always bump it so that every save is version-checked.
         profile.Touch();
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new VersionResponse(profile.Id, profile.Version);

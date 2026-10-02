@@ -1,5 +1,6 @@
 {
     "name": "CV Platform Position Viewer",
+    "author": "CV Platform",
     "version": "19.0.1.0.0",
     "category": "Human Resources",
     "summary": "Import positions and aggregated CV results from CV Platform",

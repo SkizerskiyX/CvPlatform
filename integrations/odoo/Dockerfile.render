@@ -1,0 +1,6 @@
+FROM odoo:19.0
+
+COPY --chown=odoo:odoo integrations/odoo/addons /mnt/extra-addons
+COPY --chown=odoo:odoo integrations/odoo/render_start.py /opt/cvplatform/render_start.py
+
+ENTRYPOINT ["/usr/bin/python3", "/opt/cvplatform/render_start.py"]

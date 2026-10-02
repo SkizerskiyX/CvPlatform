@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using CvPlatform.Infrastructure.Integrations.Odoo;
 
 namespace CvPlatform.Infrastructure;
 
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IStatsQueries, StatsQueries>();
 
         services.AddScoped<UserAdministration>();
+        services.AddScoped<PositionExportService>();
         services.AddScoped<IUserDirectory>(sp => sp.GetRequiredService<UserAdministration>());
         services.AddScoped<IUserAdministration>(sp => sp.GetRequiredService<UserAdministration>());
 

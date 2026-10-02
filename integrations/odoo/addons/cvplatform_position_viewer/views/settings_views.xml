@@ -1,0 +1,25 @@
+<odoo>
+    <record id="res_config_settings_view_cvplatform" model="ir.ui.view">
+        <field name="name">res.config.settings.cvplatform</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="CV Platform" name="cvplatform_position_viewer" groups="base.group_system">
+                    <block title="Position imports" name="cvplatform_imports">
+                        <setting string="CV Platform URL" help="The origin of your deployed CV Platform website, without a trailing path.">
+                            <field name="cvplatform_base_url" placeholder="https://cvplatform-h1rj.onrender.com"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_cvplatform_settings" model="ir.actions.act_window">
+        <field name="name">CV Platform settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'cvplatform_position_viewer'}</field>
+    </record>
+</odoo>

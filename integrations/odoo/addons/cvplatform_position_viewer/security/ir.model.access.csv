@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cvplatform_position,cvplatform.position viewer,model_cvplatform_position,base.group_user,1,0,0,0
+access_cvplatform_position_attribute,cvplatform.position.attribute viewer,model_cvplatform_position_attribute,base.group_user,1,0,0,0
+access_cvplatform_import_wizard,cvplatform.import.wizard user,model_cvplatform_import_wizard,base.group_user,1,1,1,1

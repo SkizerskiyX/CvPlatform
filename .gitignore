@@ -51,6 +51,9 @@ Desktop.ini
 docker-compose.override.yml
 .docker/
 pgdata/
+integrations/odoo/odoo.conf
+**/__pycache__/
+*.pyc
 
 # Local certificates and packages
 *.pfx

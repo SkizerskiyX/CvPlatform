@@ -10,6 +10,7 @@ import { AttributePicker } from '../components/AttributePicker';
 import { DataTable } from '../components/DataTable';
 import { useText } from '../hooks/useText';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { PositionExportAction } from '../components/PositionExportAction';
 
 const empty: SavePosition = { title: '', shortDescription: '', company: '', level: null, isPublic: true, maxProjects: 5, projectTags: [], attributeIds: [], accessRules: [] };
 function operators(type: string): ComparisonOperator[] {
@@ -69,5 +70,6 @@ export function PositionEditorPage() {
       <Form.Label>{text('Maximum projects', 'Максимум проектов')}<Form.Control type="number" min={0} max={20} required value={form.maxProjects} onChange={e => change({ maxProjects: Number(e.target.value) })} /></Form.Label>
       <Button type="submit" disabled={busy || conflict || !dirty}>{text('Save position', 'Сохранить позицию')}</Button>
     </fieldset></Form>}
+    {id && <PositionExportAction positionId={id} disabled={!ready || dirty || busy} />}
   </Card.Body></Card>;
 }

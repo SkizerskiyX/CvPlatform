@@ -4,7 +4,7 @@
     "version": "19.0.1.0.0",
     "category": "Human Resources",
     "summary": "Import positions and aggregated CV results from CV Platform",
-    "depends": ["base"],
+    "depends": ["base", "web"],
     "data": [
         "security/ir.model.access.csv",
         "views/position_views.xml",

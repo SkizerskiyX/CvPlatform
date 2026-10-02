@@ -33,7 +33,7 @@ def configuration():
         "proxy_mode": "True",
         "http_interface": "0.0.0.0",
         "http_port": str(int(os.environ.get("PORT", "10000"))),
-        "addons_path": "/mnt/extra-addons",
+        "addons_path": "/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons",
         "data_dir": "/var/lib/odoo",
         "workers": "0",
         "max_cron_threads": "0",
@@ -72,15 +72,15 @@ def main():
             installed = False
             if initialized:
                 cursor.execute(
-                    "SELECT state FROM ir_module_module WHERE name = %s",
-                    ("cvplatform_position_viewer",),
+                    "SELECT name FROM ir_module_module WHERE name = ANY(%s) AND state = 'installed'",
+                    (["web", "cvplatform_position_viewer"],),
                 )
-                row = cursor.fetchone()
-                installed = row is not None and row[0] == "installed"
+                installed_names = {row[0] for row in cursor.fetchall()}
+                installed = {"web", "cvplatform_position_viewer"}.issubset(installed_names)
 
     if not installed:
         subprocess.run(
-            ["odoo", "-c", str(path), "-i", "base,cvplatform_position_viewer",
+            ["odoo", "-c", str(path), "-i", "base,web,cvplatform_position_viewer",
              "--without-demo=all", "--stop-after-init", "--no-http"],
             check=True,
         )

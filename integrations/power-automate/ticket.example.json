@@ -1,0 +1,10 @@
+{
+  "Ticket ID": "05740674-5af5-422d-b5ee-a06f82dbcf0e",
+  "Created at": "2026-10-04T12:00:00Z",
+  "Summary": "Cannot publish my CV",
+  "Reported by": "Demo Candidate <candidate@example.com> (Candidate)",
+  "Position": "Software Engineer",
+  "Link": "https://cvplatform-h1rj.onrender.com/positions/05740674-5af5-422d-b5ee-a06f82dbcf0e",
+  "Priority": "High",
+  "Admins' e-mail addresses": ["admin@example.com"]
+}

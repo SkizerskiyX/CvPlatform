@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "Ticket ID": { "type": "string" },
+    "Created at": { "type": "string" },
+    "Summary": { "type": "string" },
+    "Reported by": { "type": "string" },
+    "Position": { "type": ["string", "null"] },
+    "Link": { "type": "string" },
+    "Priority": { "type": "string", "enum": ["High", "Average", "Low"] },
+    "Admins' e-mail addresses": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["Ticket ID", "Created at", "Summary", "Reported by", "Position", "Link", "Priority", "Admins' e-mail addresses"]
+}

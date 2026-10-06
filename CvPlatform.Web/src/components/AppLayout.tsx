@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { languageStorageKey } from '../i18n';
 import { Icon } from './Icon';
+import { SupportTicketDialog } from './SupportTicketDialog';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { t, i18n } = useTranslation();
@@ -14,6 +15,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const ru = i18n.language.startsWith('ru');
   const authScreen = ['/login', '/register', '/oauth-callback'].includes(pathname);
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -50,6 +52,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <Icon name="search" /><input aria-label={t('common.search')} placeholder={ru ? 'Поиск позиций и резюме' : 'Search positions and CVs'} value={search} onChange={event => setSearch(event.target.value)} /><button type="submit">{t('common.search')}</button>
         </form>
         <div className="context-actions">
+          <button className="support-link" onClick={() => setSupportOpen(true)}>{ru ? 'Помощь' : 'Help'}</button>
           <select className="language-select" value={ru ? 'ru' : 'en'} aria-label={ru ? 'Язык' : 'Language'} onChange={event => { localStorage.setItem(languageStorageKey, event.target.value); void i18n.changeLanguage(event.target.value); }}><option value="en">EN</option><option value="ru">RU</option></select>
           <button className="icon-button" onClick={toggle} aria-label={ru ? 'Переключить тему' : 'Switch theme'}><Icon name={theme === 'dark' ? 'sun' : 'moon'} /></button>
           {isAuthenticated ? <button className="icon-button" title={t('nav.logout')} aria-label={t('nav.logout')} onClick={() => void signOut()}><Icon name="logout" /></button> : <Link className="header-signin" to="/login">{t('nav.login')}</Link>}
@@ -59,7 +62,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {!authScreen && pathname !== '/' && <div className="workspace-heading"><h1>{title}</h1>{subtitles[pathname] && <p>{subtitles[pathname]}</p>}</div>}
         {authScreen ? <div className="auth-composition"><section className="auth-introduction"><span className="document-emblem"><Icon name="cv" /></span><h1>{ru ? 'Весь ваш опыт. В правильном свете.' : 'Your experience. In the right light.'}</h1><p>{ru ? 'Соберите профиль один раз. Создавайте резюме под подходящие позиции.' : 'Build your profile once. Create a CV for the positions that fit you.'}</p><Link to="/positions">{ru ? 'Посмотреть позиции' : 'Explore open positions'}</Link></section><div>{children}<p className="auth-switch">{pathname === '/register' ? <Link to="/login">{ru ? 'Уже есть аккаунт? Войти' : 'Already have an account? Sign in'}</Link> : <Link to="/register">{ru ? 'Нет аккаунта? Зарегистрироваться' : 'New here? Create an account'}</Link>}</p></div></div> : children}
       </main>
-      <footer className="workspace-footer"><span>CV Platform</span><span>{ru ? 'Ваш опыт имеет значение.' : 'Make your experience count.'}</span></footer>
+      <footer className="workspace-footer"><span>CV Platform</span><button className="support-link" onClick={() => setSupportOpen(true)}>{ru ? 'Создать обращение в поддержку' : 'Create support ticket'}</button></footer>
     </div>
+    <SupportTicketDialog show={supportOpen} onHide={() => setSupportOpen(false)} />
   </div>;
 }

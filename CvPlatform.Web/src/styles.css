@@ -26,6 +26,10 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .crm-profile-summary { display: grid; gap: 4px; padding: 16px 18px; border-left: 3px solid var(--cv-primary); background: var(--cv-raised); overflow-wrap: anywhere; }
 .crm-profile-summary span { color: var(--cv-muted); }
 .position-export { border-top: 1px solid var(--cv-border); padding-top: 24px; }
+.support-link { border: 0; background: transparent; color: var(--cv-primary); cursor: pointer; padding: 4px; font-weight: 600; }
+.support-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.support-context { display: grid; gap: 4px; border-left: 3px solid var(--cv-primary); padding: 12px 16px; background: var(--cv-raised); overflow-wrap: anywhere; }
+.support-context span { color: var(--cv-muted); font-size: 12px; }
 button:disabled { cursor: not-allowed; }
 h1 { font-family: 'Literata', Georgia, serif; font-weight: 400; letter-spacing: -.04em; line-height: 1.16; }
 h2, h3, h4, h5, h6 { color: var(--cv-text); }

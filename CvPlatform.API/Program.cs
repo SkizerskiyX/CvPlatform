@@ -24,6 +24,20 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IRoleManagementService, RoleManagementService>();
 builder.Services.Configure<SalesforceOptions>(builder.Configuration.GetSection("Salesforce"));
 builder.Services.AddHttpClient<SalesforceService>();
+builder.Services.Configure<CvPlatform.Infrastructure.Integrations.Support.SupportOptions>(builder.Configuration.GetSection("Support"));
+builder.Services.AddScoped<CvPlatform.Infrastructure.Integrations.Support.DropboxConnectionStore>();
+builder.Services.AddHttpClient("dropbox-oauth", client => client.Timeout = TimeSpan.FromSeconds(45))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHttpClient<CvPlatform.Infrastructure.Integrations.Support.DropboxTicketUploader>(client => client.Timeout = TimeSpan.FromSeconds(45))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    options.AddPolicy("support", context => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        { PermitLimit = 3, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
 
 var authenticationBuilder = builder.Services
     .AddAuthentication(options =>
@@ -156,6 +170,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("spa");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 
 var spaCandidates = new[]

@@ -80,4 +80,4 @@ public sealed record SupportTicketDocument(
     [property: JsonPropertyName("Position")] string? Position,
     [property: JsonPropertyName("Link")] string Link,
     [property: JsonPropertyName("Priority")] string Priority,
-    [property: JsonPropertyName("Admins' e-mail addresses")] string[] AdminEmails);
+    [property: JsonPropertyName("admins")] string[] AdminEmails);

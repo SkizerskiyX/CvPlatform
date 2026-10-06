@@ -28,6 +28,9 @@ public sealed class DropboxTicketUploader(HttpClient client, IOptions<SupportOpt
 
     public async Task UploadAsync(Guid id, string userId, string json, CancellationToken cancellationToken)
     {
+        using var document = JsonDocument.Parse(json);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+            throw new InvalidOperationException("Support ticket must be a JSON object.");
         if (!await IsConfiguredAsync(cancellationToken)) throw new InvalidOperationException("Support upload is not configured. Contact an administrator.");
         var settings = options.Value;
         var folder = settings.Folder.TrimEnd('/');

@@ -19,6 +19,27 @@ if (!uploader.IsConfigured) throw new Exception("Valid configuration rejected");
 await uploader.UploadAsync(id, "user-1", "{\"Summary\":\"Тест\"}", default);
 if (handler.Calls != 2 || !handler.Path.EndsWith($"{id:N}.json") || !handler.Body.Contains("Тест"))
     throw new Exception("JSON upload or filename is incorrect");
+var ticketJson = JsonSerializer.Serialize(new Dictionary<string, object?>
+{
+    ["Summary"] = "Тест уведомления Power Automate",
+    ["Reported by"] = "Test User <exalizer@gmail.com> (Admin)",
+    ["Position"] = null,
+    ["Link"] = "https://cvplatform-h1rj.onrender.com/positions",
+    ["Priority"] = "High",
+    ["Created at"] = "2026-10-06T12:00:00Z",
+    ["Admins' e-mail addresses"] = new[] { "exalizer@gmail.com" }
+});
+await uploader.UploadAsync(id, "user-1", ticketJson, default);
+if (handler.Body != ticketJson) throw new Exception("Upload changed JSON punctuation or content");
+using (var uploaded = JsonDocument.Parse(handler.Body))
+{
+    if (uploaded.RootElement.GetProperty("Link").GetString() != "https://cvplatform-h1rj.onrender.com/positions")
+        throw new Exception("Upload corrupted the URL");
+}
+var callsBeforeInvalid = handler.Calls;
+try { await uploader.UploadAsync(id, "user-1", "{ Summary Тест, Link httpscvplatform }", default); throw new Exception("Malformed JSON accepted"); }
+catch (JsonException) { }
+if (handler.Calls != callsBeforeInvalid) throw new Exception("Malformed JSON reached Dropbox");
 settings.PublicOrigin = "http://example.com";
 if (uploader.IsConfigured) throw new Exception("Non-HTTPS origin accepted");
 settings.PublicOrigin = "https://example.com/profile";
@@ -56,7 +77,7 @@ catch (CryptographicException) { }
 if (!db.GetService<IMigrationsAssembly>().Migrations.ContainsKey("20261006220000_AddSupportDropboxConnection"))
     throw new Exception("Dropbox connection migration was not discovered");
 if (db.Database.HasPendingModelChanges()) throw new Exception("EF snapshot does not match the runtime model");
-Console.WriteLine("12 support upload, encryption and migration checks passed");
+Console.WriteLine("Support upload, JSON integrity, encryption and migration checks passed");
 
 sealed class CheckHandler : HttpMessageHandler
 {

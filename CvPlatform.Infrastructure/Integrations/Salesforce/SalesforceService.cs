@@ -63,40 +63,59 @@ public sealed class SalesforceService(HttpClient httpClient, IOptions<Salesforce
         var token = await AuthenticateAsync(cancellationToken);
         var root = await ApiRootAsync(token, cancellationToken);
         var marker = $"CvPlatform profile {profile.Id:D}";
+        string? contactId = null;
+        string? accountId = null;
         var escapedEmail = email.Replace("\\", "\\\\").Replace("'", "\\'");
-        using var existing = await SendAsync(token, HttpMethod.Get, root + "/query/?q=" + Uri.EscapeDataString($"SELECT Id, AccountId, Description FROM Contact WHERE Email = '{escapedEmail}' LIMIT 2000"), null, cancellationToken);
+        var contactFilter = $"Email = '{escapedEmail}'";
+        if (profile.SalesforceContactId is { } savedContactId)
+            contactFilter += $" OR Id = '{savedContactId.Replace("\\", "\\\\").Replace("'", "\\'")}'";
+        using var existing = await SendAsync(token, HttpMethod.Get, root + "/query/?q=" + Uri.EscapeDataString($"SELECT Id, AccountId, Description FROM Contact WHERE {contactFilter} LIMIT 2000"), null, cancellationToken);
         foreach (var record in existing.RootElement.GetProperty("records").EnumerateArray())
-            if (record.GetProperty("Description").GetString()?.StartsWith(marker + "\n", StringComparison.Ordinal) == true && record.GetProperty("AccountId").ValueKind == JsonValueKind.String)
-                return (record.GetProperty("AccountId").GetString()!, record.GetProperty("Id").GetString()!);
+            if (record.GetProperty("Description").GetString()?.StartsWith(marker + "\n", StringComparison.Ordinal) == true)
+            {
+                contactId = record.GetProperty("Id").GetString();
+                accountId = record.GetProperty("AccountId").ValueKind == JsonValueKind.String ? record.GetProperty("AccountId").GetString() : null;
+                break;
+            }
+        accountId ??= profile.SalesforceAccountId;
+        var accountQuery = accountId is null
+            ? $"SELECT Id, Description FROM Account WHERE Name = '{organization.Replace("\\", "\\\\").Replace("'", "\\'")}' LIMIT 2000"
+            : $"SELECT Id FROM Account WHERE Id = '{accountId.Replace("'", "\\'")}' LIMIT 1";
+        using var accounts = await SendAsync(token, HttpMethod.Get, root + "/query/?q=" + Uri.EscapeDataString(accountQuery), null, cancellationToken);
+        accountId = accounts.RootElement.GetProperty("records").EnumerateArray()
+            .Where(x => accountId is not null || x.GetProperty("Description").GetString() == marker)
+            .Select(x => x.GetProperty("Id").GetString()).FirstOrDefault();
 
         var description = $"{marker}\nLocation: {profile.Location}\nPhoto: {profile.PhotoUrl}\nNewsletter consent: {newsletterConsent}\n{notes}";
         var contactBody = new Dictionary<string, object?>
         {
-            ["AccountId"] = "@{account.id}", ["FirstName"] = profile.FirstName, ["LastName"] = profile.LastName,
+            ["AccountId"] = accountId ?? "@{account.id}", ["FirstName"] = profile.FirstName, ["LastName"] = profile.LastName,
             ["Email"] = email, ["Phone"] = phone, ["Description"] = description
         };
         using var metadata = await SendAsync(token, HttpMethod.Get, root + "/sobjects/Contact/describe", null, cancellationToken);
-        if (metadata.RootElement.GetProperty("fields").EnumerateArray().Any(x => x.GetProperty("name").GetString() == "HasOptedOutOfEmail" && x.GetProperty("createable").GetBoolean()))
+        if (metadata.RootElement.GetProperty("fields").EnumerateArray().Any(x => x.GetProperty("name").GetString() == "HasOptedOutOfEmail" && x.TryGetProperty(contactId is null ? "createable" : "updateable", out var writable) && writable.GetBoolean()))
             contactBody["HasOptedOutOfEmail"] = !newsletterConsent;
         var body = new
         {
             allOrNone = true,
             compositeRequest = new object[]
             {
-                new { method = "POST", url = root + "/sobjects/Account", referenceId = "account", body = new { Name = organization, Description = marker } },
-                new { method = "POST", url = root + "/sobjects/Contact", referenceId = "contact", body = contactBody }
+                new { method = accountId is null ? "POST" : "PATCH", url = root + "/sobjects/Account" + (accountId is null ? "" : "/" + accountId), referenceId = "account", body = new { Name = organization, Description = marker } },
+                new { method = contactId is null ? "POST" : "PATCH", url = root + "/sobjects/Contact" + (contactId is null ? "" : "/" + contactId), referenceId = "contact", body = contactBody }
             }
         };
         using var result = await SendAsync(token, HttpMethod.Post, root + "/composite", body, cancellationToken);
         var responses = result.RootElement.GetProperty("compositeResponse").EnumerateArray().ToArray();
-        var failed = responses.FirstOrDefault(x => x.GetProperty("httpStatusCode").GetInt32() >= 400 && !x.GetProperty("body").ToString().Contains("PROCESSING_HALTED"));
+        var failures = responses.Where(x => x.GetProperty("httpStatusCode").GetInt32() >= 400).ToArray();
+        var failed = failures.FirstOrDefault(x => !x.GetProperty("body").ToString().Contains("PROCESSING_HALTED"));
+        if (failed.ValueKind == JsonValueKind.Undefined) failed = failures.FirstOrDefault();
         if (failed.ValueKind != JsonValueKind.Undefined)
         {
             var error = failed.GetProperty("body");
             var code = error.ValueKind == JsonValueKind.Array && error.GetArrayLength() > 0 && error[0].TryGetProperty("errorCode", out var errorCode) ? errorCode.GetString() : "UNKNOWN_ERROR";
             throw new InvalidOperationException($"Salesforce could not create the records ({code}). Check required fields and Account/Contact permissions.");
         }
-        return (responses.Single(x => x.GetProperty("referenceId").GetString() == "account").GetProperty("body").GetProperty("id").GetString()!,
-            responses.Single(x => x.GetProperty("referenceId").GetString() == "contact").GetProperty("body").GetProperty("id").GetString()!);
+        return (accountId ?? responses.Single(x => x.GetProperty("referenceId").GetString() == "account").GetProperty("body").GetProperty("id").GetString()!,
+            contactId ?? responses.Single(x => x.GetProperty("referenceId").GetString() == "contact").GetProperty("body").GetProperty("id").GetString()!);
     }
 }

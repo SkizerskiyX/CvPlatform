@@ -51,8 +51,6 @@ public class SalesforceController : ControllerBase
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var profile = await db.UserProfiles.FromSqlInterpolated($"SELECT *, xmin FROM \"UserProfiles\" WHERE \"Id\" = {profileId} FOR UPDATE")
             .SingleOrDefaultAsync(cancellationToken) ?? throw new NotFoundException("Profile does not exist.");
-        if (profile.SalesforceContactId != null)
-            return Ok(new { connected = true, profile.SalesforceConnectedAt });
         if (string.IsNullOrWhiteSpace(profile.LastName) || profile.FirstName.Length > 40 || profile.LastName.Length > 80)
             return BadRequest(new { message = "Save your last name in the profile first. Salesforce allows up to 40 characters for first name and 80 for last name." });
         var email = await db.Users.Where(x => x.Id == profile.IdentityUserId).Select(x => x.Email).SingleAsync(cancellationToken);

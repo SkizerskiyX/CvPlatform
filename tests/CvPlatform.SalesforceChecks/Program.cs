@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 var profile = new UserProfile("test-user", "Test", "Candidate", "Warsaw");
 var options = Options.Create(new SalesforceOptions { Domain = "https://login.test", ClientId = "test", ClientSecret = "test" });
 
-foreach (var mode in new[] { "create", "recover", "failure", "restricted-fields" })
+foreach (var mode in new[] { "create", "recover", "missing-account", "missing-contact", "failure", "restricted-fields" })
 {
     var handler = new SalesforceHandler(profile.Id, mode);
     var service = new SalesforceService(new HttpClient(handler), options);
@@ -15,7 +15,7 @@ foreach (var mode in new[] { "create", "recover", "failure", "restricted-fields"
     {
         var ids = await service.CreateProfileAsync(profile, "test@example.com", "Test organization", null, "Test notes", false, default);
         if (mode == "failure" || ids != ("account-id", "contact-id")) throw new Exception("Unexpected integration result.");
-        if (handler.CompositeCalls != (mode == "recover" ? 0 : 1)) throw new Exception("Unexpected duplicate creation.");
+        if (handler.CompositeCalls != 1) throw new Exception("Synchronization was skipped.");
     }
     catch (InvalidOperationException exception) when (mode == "failure" && exception.Message.Contains("REQUIRED_FIELD_MISSING")) { }
     Console.WriteLine($"PASS: {mode}");
@@ -39,10 +39,14 @@ sealed class SalesforceHandler(Guid profileId, string mode) : HttpMessageHandler
             throw new Exception("API requests must use the authenticated instance and token.");
         if (path == "/services/data/") return Json("[{\"url\":\"/services/data/v65.0\"},{\"url\":\"/services/data/v66.0\"}]");
         if (!path.StartsWith("/services/data/v66.0/")) throw new Exception("Incorrect API version.");
-        if (path.EndsWith("/describe")) return mode == "restricted-fields" ? Json("{\"fields\":[]}") : Json("{\"fields\":[{\"name\":\"HasOptedOutOfEmail\",\"createable\":true}]}");
+        if (path.EndsWith("/describe")) return mode == "restricted-fields" ? Json("{\"fields\":[]}") : Json("{\"fields\":[{\"name\":\"HasOptedOutOfEmail\",\"createable\":true,\"updateable\":true}]}");
         if (path.EndsWith("/query/"))
         {
-            if (mode == "recover") return Json(JsonSerializer.Serialize(new { records = new[] { new { Id = "contact-id", AccountId = "account-id", Description = $"CvPlatform profile {profileId:D}\nLocation: Warsaw" } } }));
+            if (mode == "accounts") return Json("{\"totalSize\":0,\"records\":[]}");
+            var query = Uri.UnescapeDataString(request.RequestUri.Query);
+            if (query.Contains("FROM Account"))
+                return mode is "recover" or "missing-contact" ? Json(JsonSerializer.Serialize(new { records = new[] { new { Id = "account-id", Description = $"CvPlatform profile {profileId:D}" } } })) : Json("{\"records\":[]}");
+            if (mode is "recover" or "missing-account") return Json(JsonSerializer.Serialize(new { records = new[] { new { Id = "contact-id", AccountId = "account-id", Description = $"CvPlatform profile {profileId:D}\nLocation: Warsaw" } } }));
             return Json("{\"totalSize\":0,\"records\":[]}");
         }
         if (path.EndsWith("/composite"))
@@ -51,13 +55,22 @@ sealed class SalesforceHandler(Guid profileId, string mode) : HttpMessageHandler
             using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
             if (!body.RootElement.GetProperty("allOrNone").GetBoolean()) throw new Exception("Creation must be atomic.");
             var contact = body.RootElement.GetProperty("compositeRequest")[1].GetProperty("body");
-            if (contact.GetProperty("AccountId").GetString() != "@{account.id}" || (mode != "restricted-fields" && !contact.GetProperty("HasOptedOutOfEmail").GetBoolean()))
+            var accountExists = mode is "recover" or "missing-contact";
+            var contactExists = mode is "recover" or "missing-account";
+            var requests = body.RootElement.GetProperty("compositeRequest");
+            if (requests[0].GetProperty("method").GetString() != (accountExists ? "PATCH" : "POST")
+                || requests[1].GetProperty("method").GetString() != (contactExists ? "PATCH" : "POST"))
+                throw new Exception("Existing records must be updated and missing records recreated.");
+            if (contact.GetProperty("AccountId").GetString() != (accountExists ? "account-id" : "@{account.id}") || (mode != "restricted-fields" && !contact.GetProperty("HasOptedOutOfEmail").GetBoolean()))
                 throw new Exception("Contact linkage or consent is incorrect.");
             if (mode == "restricted-fields" && (contact.TryGetProperty("HasOptedOutOfEmail", out _) || !contact.GetProperty("Description").GetString()!.Contains("Newsletter consent: False")))
                 throw new Exception("Unavailable fields must be omitted, while consent must be preserved.");
             return mode == "failure"
                 ? Json("{\"compositeResponse\":[{\"referenceId\":\"account\",\"httpStatusCode\":400,\"body\":[{\"errorCode\":\"PROCESSING_HALTED\"}]},{\"referenceId\":\"contact\",\"httpStatusCode\":400,\"body\":[{\"errorCode\":\"REQUIRED_FIELD_MISSING\"}]}]}")
-                : Json("{\"compositeResponse\":[{\"referenceId\":\"account\",\"httpStatusCode\":201,\"body\":{\"id\":\"account-id\"}},{\"referenceId\":\"contact\",\"httpStatusCode\":201,\"body\":{\"id\":\"contact-id\"}}]}");
+                : Json(JsonSerializer.Serialize(new { compositeResponse = new object[] {
+                    new { referenceId = "account", httpStatusCode = accountExists ? 204 : 201, body = accountExists ? null : new { id = "account-id" } },
+                    new { referenceId = "contact", httpStatusCode = contactExists ? 204 : 201, body = contactExists ? null : new { id = "contact-id" } }
+                } }));
         }
         throw new Exception("Unexpected Salesforce request.");
     }

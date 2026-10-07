@@ -16,6 +16,7 @@ export function SalesforceProfileAction({ profileId, disabled = false, onConnect
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [consent, setConsent] = useState(false);
+  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -38,13 +39,14 @@ export function SalesforceProfileAction({ profileId, disabled = false, onConnect
         phone: phone.trim() || null, notes: notes.trim() || null, newsletterConsent: consent,
       });
       setProfile({ ...profile, connected: true });
+      setSent(true);
       if (onConnected) await onConnected();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   };
 
   return <>
-    <Button variant="outline-primary" disabled={disabled} onClick={() => setShow(true)}>
+    <Button variant="outline-primary" disabled={disabled} onClick={() => { setSent(false); setShow(true); }}>
       {text('Connect to CRM', 'Подключить к CRM')}
     </Button>
     <Modal show={show} onHide={() => { if (!busy) setShow(false); }} centered backdrop={busy ? 'static' : true} keyboard={!busy}>
@@ -53,7 +55,9 @@ export function SalesforceProfileAction({ profileId, disabled = false, onConnect
         <Modal.Body className="d-grid gap-3">
           {error && <Alert variant="danger" role="alert">{error}</Alert>}
           {!profile && !error && <Spinner animation="border" role="status"><span className="visually-hidden">{text('Loading', 'Загрузка')}</span></Spinner>}
-          {profile?.connected ? <Alert variant="success" role="status">{text('This profile is connected to Salesforce. The account and contact have been created.', 'Профиль подключён к Salesforce. Организация и контакт созданы.')}</Alert> : profile && <>
+          {sent && <Alert variant="success" role="status">{text('The account and contact have been saved in Salesforce.', 'Организация и контакт сохранены в Salesforce.')}</Alert>}
+          {profile && <>
+            {profile.connected && !sent && <Alert variant="info">{text('Submit again to update Salesforce or restore missing records.', 'Отправьте данные повторно, чтобы обновить Salesforce или восстановить отсутствующие записи.')}</Alert>}
             <p className="mb-0 text-body-secondary">{text('Send your saved profile and the details below to our CRM.', 'Передайте сохранённый профиль и сведения ниже в нашу CRM.')}</p>
             <div className="crm-profile-summary">
               <strong>{profile.firstName} {profile.lastName}</strong>
@@ -69,7 +73,7 @@ export function SalesforceProfileAction({ profileId, disabled = false, onConnect
           </>}
         </Modal.Body>
         <Modal.Footer><Button variant="secondary" disabled={busy} onClick={() => setShow(false)}>{text('Close', 'Закрыть')}</Button>
-          {profile && !profile.connected && <Button type="submit" disabled={busy || !profile.lastName.trim() || profile.firstName.length > 40 || profile.lastName.length > 80 || (!personal && !organization.trim())}>
+          {profile && <Button type="submit" disabled={busy || !profile.lastName.trim() || profile.firstName.length > 40 || profile.lastName.length > 80 || (!personal && !organization.trim())}>
             {busy ? text('Sending…', 'Отправка…') : text('Send to CRM', 'Отправить в CRM')}
           </Button>}
         </Modal.Footer>
